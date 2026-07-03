@@ -18,6 +18,20 @@ mysql -u root -p < sql/02_create_tables.sql
 mysql -u root -p < sql/03_insert_sample_data.sql
 ```
 
+本机 Windows 11 环境中，MySQL 客户端绝对路径为：
+
+```text
+C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe
+```
+
+PowerShell 中建议通过 `source` 执行脚本：
+
+```powershell
+& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p -e "source E:/Project/edu-management-system/sql/01_create_database.sql"
+& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p -e "source E:/Project/edu-management-system/sql/02_create_tables.sql"
+& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p -e "source E:/Project/edu-management-system/sql/03_insert_sample_data.sql"
+```
+
 也可以在 Navicat、DataGrip、MySQL Workbench 中按文件顺序手动执行。
 
 ## 维护规则

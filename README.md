@@ -19,6 +19,7 @@
 - 数据访问：Spring JDBC / JdbcTemplate
 - 页面方案：前端尚未最终确定，当前规划优先采用 Thymeleaf + Bootstrap + ECharts，避免过早引入复杂前后端分离架构。
 - 开发环境：Windows 11；如需 Python 辅助脚本，默认 conda 环境为 `low_numpy`。
+- 本机 MySQL 客户端路径：`C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe`。在 PowerShell 中执行 SQL 时优先使用该绝对路径。
 
 ## 当前目录架构
 
@@ -59,6 +60,14 @@ mysql -u root -p < sql/02_create_tables.sql
 mysql -u root -p < sql/03_insert_sample_data.sql
 ```
 
+在本机 Windows PowerShell 中建议使用绝对路径，并通过 `source` 执行脚本：
+
+```powershell
+& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p -e "source E:/Project/edu-management-system/sql/01_create_database.sql"
+& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p -e "source E:/Project/edu-management-system/sql/02_create_tables.sql"
+& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p -e "source E:/Project/edu-management-system/sql/03_insert_sample_data.sql"
+```
+
 如果使用 Navicat、DataGrip 或 MySQL Workbench，也按同样顺序逐个执行。
 
 数据库名称为 `edu_management_system`。表结构以 `docs/数据库计划.md` 为主要依据；如果整体计划与具体数据库计划存在出入，以具体数据库计划为准。
@@ -91,6 +100,7 @@ teacher + student -> teacher_student
 - 涉及数据库表结构时，以 `docs/数据库计划.md` 和 `sql/02_create_tables.sql` 为准。
 - 涉及课程评分点时，以 `docs/java任务书.txt` 为准。
 - 使用 CodeGraph 进行结构化代码理解。本项目已初始化 CodeGraph；新增或大幅调整 Java 代码后，可执行 `codegraph index` 更新索引。
+- 需要执行 MySQL 命令时，使用本机绝对路径 `C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe`，不要假设 `mysql` 已加入 PATH。
 - 小任务完成后提交清晰的 git commit；大型功能应先从 `main` 创建 `agent/` 前缀的新分支再开发。
 - 新增目录时，应补充该目录下的 Markdown 说明文件，解释目录职责和维护规则。
 - 后续实现应优先打通最小闭环：MySQL 连接、登录、角色跳转、学生列表查询、学生 CRUD。
