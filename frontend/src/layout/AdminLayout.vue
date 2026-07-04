@@ -59,6 +59,7 @@ import {
   School,
   TrendCharts
 } from '@element-plus/icons-vue'
+import { logout as logoutApi } from '../api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -115,7 +116,12 @@ const roleConfigs = {
 const currentMenu = computed(() => menus[currentUser.value.role] || menus.ADMIN)
 const roleConfig = computed(() => roleConfigs[currentUser.value.role] || roleConfigs.ADMIN)
 
-function logout() {
+async function logout() {
+  try {
+    await logoutApi()
+  } catch (error) {
+    // 本地状态仍需清理，避免会话接口异常时卡在当前页面。
+  }
   localStorage.removeItem('currentUser')
   router.push('/login')
 }

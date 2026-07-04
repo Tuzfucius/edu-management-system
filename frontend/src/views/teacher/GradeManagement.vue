@@ -2,34 +2,30 @@
   <div class="page">
     <div>
       <h1 class="page-title">成绩录入</h1>
-      <div class="page-description">教师维护本人任课课程下学生成绩，当前为静态演示数据。</div>
+      <div class="page-description">教师维护本人任课课程下学生成绩。</div>
     </div>
 
     <el-card>
       <div class="toolbar">
         <div class="toolbar-left">
-          <el-select v-model="course" style="width: 180px">
-            <el-option label="数据库原理" value="数据库原理" />
-            <el-option label="Java Web 开发" value="Java Web 开发" />
-          </el-select>
-          <el-input v-model="keyword" placeholder="搜索学号或姓名" clearable style="width: 220px" />
+          <el-input v-model="keyword" placeholder="搜索学号、姓名或课程" clearable style="width: 260px" />
         </div>
         <el-button type="primary" @click="saveGrades">批量保存</el-button>
       </div>
 
-      <el-table :data="filteredRows" border>
+      <el-table v-loading="loading" :data="filteredRows" border>
         <el-table-column prop="studentNo" label="学号" width="120" />
         <el-table-column prop="studentName" label="姓名" width="100" />
-        <el-table-column prop="course" label="课程" />
+        <el-table-column prop="courseName" label="课程" />
         <el-table-column label="成绩" width="160">
           <template #default="{ row }">
-            <el-input-number v-model="row.score" :min="0" :max="100" :step="1" controls-position="right" />
+            <el-input-number v-model="row.score" :min="0" :max="100" controls-position="right" />
           </template>
         </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.score === null ? 'warning' : 'success'" effect="plain">
-              {{ row.score === null ? '未录入' : '已录入' }}
+            <el-tag :type="row.gradeStatus === 1 ? 'success' : 'warning'" effect="plain">
+              {{ row.gradeStatus === 1 ? '已录入' : '未录入' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -39,22 +35,35 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { gradeRows } from '../../data/mockData'
+import { listStudentCourses, updateScore } from '../../api/studentCourse'
+import { getTeacherByUser } from '../../api/teacher'
 
-const course = ref('数据库原理')
 const keyword = ref('')
+const loading = ref(false)
+const rows = ref([])
+const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null')
 
-const filteredRows = computed(() => {
-  return gradeRows.filter((item) => {
-    const matchCourse = item.course === course.value
-    const matchKeyword = !keyword.value || item.studentNo.includes(keyword.value) || item.studentName.includes(keyword.value)
-    return matchCourse && matchKeyword
-  })
-})
+const filteredRows = computed(() => rows.value.filter((item) => {
+  return !keyword.value || [item.studentNo, item.studentName, item.courseName].some((value) => String(value || '').includes(keyword.value))
+}))
 
-function saveGrades() {
-  ElMessage.success('成绩已暂存到前端演示数据')
+onMounted(refresh)
+
+async function refresh() {
+  loading.value = true
+  try {
+    const teacher = await getTeacherByUser(currentUser.id)
+    rows.value = await listStudentCourses({ teacherId: teacher.id })
+  } finally {
+    loading.value = false
+  }
+}
+
+async function saveGrades() {
+  await Promise.all(rows.value.filter((row) => row.score !== null && row.score !== undefined).map((row) => updateScore(row.id, { score: row.score, remark: row.remark })))
+  ElMessage.success('成绩已保存')
+  await refresh()
 }
 </script>
