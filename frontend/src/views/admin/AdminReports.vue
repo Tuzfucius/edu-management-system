@@ -26,7 +26,7 @@
 
     <el-card>
       <template #header><span class="section-title">教师任课工作量</span></template>
-      <el-table v-loading="loading" :data="teachingLoad" border>
+      <el-table v-loading="loading" :data="teachingLoad" border empty-text="暂无任课统计数据">
         <el-table-column prop="teacherName" label="教师" />
         <el-table-column prop="taskCount" label="任课数量" width="120" />
         <el-table-column prop="selectedCount" label="选课学生数" width="140" />

@@ -14,7 +14,7 @@
             </div>
             <el-button type="primary" @click="openCourseDialog()">新增课程</el-button>
           </div>
-          <el-table v-loading="loading" :data="filteredCourses" border>
+          <el-table v-loading="loading" :data="filteredCourses" border empty-text="暂无课程数据">
             <el-table-column prop="courseCode" label="课程编号" width="130" />
             <el-table-column prop="courseName" label="课程名称" />
             <el-table-column prop="credit" label="学分" width="90" />
@@ -43,7 +43,7 @@
             </div>
             <el-button type="primary" @click="openTaskDialog()">新增任课</el-button>
           </div>
-          <el-table v-loading="loading" :data="filteredTasks" border>
+          <el-table v-loading="loading" :data="filteredTasks" border empty-text="暂无任课安排">
             <el-table-column prop="courseName" label="课程" />
             <el-table-column prop="teacherName" label="教师" width="120" />
             <el-table-column prop="semester" label="学期" width="130" />

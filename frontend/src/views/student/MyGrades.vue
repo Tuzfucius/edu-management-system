@@ -29,7 +29,7 @@
     </div>
 
     <el-card>
-      <el-table v-loading="loading" :data="rows" border>
+      <el-table v-loading="loading" :data="rows" border empty-text="暂无成绩数据">
         <el-table-column prop="courseName" label="课程" />
         <el-table-column prop="teacherName" label="教师" width="110" />
         <el-table-column prop="credit" label="学分" width="80" />

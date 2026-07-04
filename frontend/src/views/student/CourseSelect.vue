@@ -16,7 +16,7 @@
         </div>
       </div>
 
-      <el-table v-loading="loading" :data="filteredCourses" border>
+      <el-table v-loading="loading" :data="filteredCourses" border empty-text="暂无可选课程">
         <el-table-column prop="courseCode" label="课程编号" width="120" />
         <el-table-column prop="courseName" label="课程名称" />
         <el-table-column prop="teacherName" label="教师" width="100" />

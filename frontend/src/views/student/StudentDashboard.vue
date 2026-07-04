@@ -16,7 +16,7 @@
     <div class="content-grid">
       <el-card>
         <template #header><span class="section-title">今日课程</span></template>
-        <el-table :data="todayCourses" border>
+        <el-table :data="todayCourses" border empty-text="今日暂无课程">
           <el-table-column prop="name" label="课程" />
           <el-table-column prop="time" label="时间" width="140" />
           <el-table-column prop="room" label="地点" width="130" />

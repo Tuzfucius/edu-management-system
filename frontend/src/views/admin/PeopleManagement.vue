@@ -12,7 +12,7 @@
             <el-input v-model="studentKeyword" placeholder="搜索学号、姓名、班级" clearable style="width: 280px" />
             <el-button type="primary" @click="openStudentDialog()">新增学生</el-button>
           </div>
-          <el-table v-loading="loading" :data="filteredStudents" border>
+          <el-table v-loading="loading" :data="filteredStudents" border empty-text="暂无学生数据">
             <el-table-column prop="studentNo" label="学号" width="130" />
             <el-table-column prop="studentName" label="姓名" width="110" />
             <el-table-column prop="collegeName" label="学院" />
@@ -35,7 +35,7 @@
             <el-input v-model="teacherKeyword" placeholder="搜索工号、姓名、教研室" clearable style="width: 280px" />
             <el-button type="primary" @click="openTeacherDialog()">新增教师</el-button>
           </div>
-          <el-table v-loading="loading" :data="filteredTeachers" border>
+          <el-table v-loading="loading" :data="filteredTeachers" border empty-text="暂无教师数据">
             <el-table-column prop="teacherNo" label="工号" width="130" />
             <el-table-column prop="teacherName" label="姓名" width="110" />
             <el-table-column prop="collegeName" label="学院" />
@@ -58,7 +58,7 @@
             <el-input v-model="userKeyword" placeholder="搜索用户名或角色" clearable style="width: 260px" />
             <el-button type="primary" @click="openUserDialog()">新增账号</el-button>
           </div>
-          <el-table v-loading="loading" :data="filteredUsers" border>
+          <el-table v-loading="loading" :data="filteredUsers" border empty-text="暂无账号数据">
             <el-table-column prop="username" label="用户名" />
             <el-table-column label="角色" width="130">
               <template #default="{ row }">
@@ -82,7 +82,7 @@
             <span class="section-title">教师指导学生</span>
             <el-button type="primary" @click="openGuideDialog()">新增关系</el-button>
           </div>
-          <el-table v-loading="loading" :data="guides" border>
+          <el-table v-loading="loading" :data="guides" border empty-text="暂无指导关系">
             <el-table-column prop="teacherName" label="教师" />
             <el-table-column prop="studentNo" label="学号" width="130" />
             <el-table-column prop="studentName" label="学生" />

@@ -25,7 +25,7 @@
         <el-tab-pane label="班级" name="classInfo" />
       </el-tabs>
 
-      <el-table v-loading="loading" :data="filteredRows" border>
+      <el-table v-loading="loading" :data="filteredRows" border empty-text="暂无组织数据">
         <el-table-column
             v-for="column in activeConfig.columns"
             :key="column.prop"

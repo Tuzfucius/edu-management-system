@@ -13,7 +13,7 @@
         <el-button type="primary" @click="saveGrades">批量保存</el-button>
       </div>
 
-      <el-table v-loading="loading" :data="filteredRows" border>
+      <el-table v-loading="loading" :data="filteredRows" border empty-text="暂无待录入成绩">
         <el-table-column prop="studentNo" label="学号" width="120" />
         <el-table-column prop="studentName" label="姓名" width="100" />
         <el-table-column prop="courseName" label="课程" />

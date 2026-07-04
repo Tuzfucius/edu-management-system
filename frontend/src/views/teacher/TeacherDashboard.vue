@@ -16,7 +16,7 @@
     <div class="content-grid">
       <el-card>
         <template #header><span class="section-title">本周课程</span></template>
-        <el-table :data="teacherTasks" border>
+        <el-table :data="teacherTasks" border empty-text="暂无任课安排">
           <el-table-column prop="course" label="课程" />
           <el-table-column prop="time" label="时间" width="130" />
           <el-table-column prop="room" label="教室" width="120" />

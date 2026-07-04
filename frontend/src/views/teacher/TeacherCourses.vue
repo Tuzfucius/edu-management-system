@@ -16,7 +16,7 @@
         </div>
       </div>
 
-      <el-table v-loading="loading" :data="filteredTasks" border>
+      <el-table v-loading="loading" :data="filteredTasks" border empty-text="暂无任课安排">
         <el-table-column prop="courseName" label="课程名称" />
         <el-table-column prop="semester" label="学期" width="140" />
         <el-table-column label="上课时间" width="160">

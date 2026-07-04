@@ -57,7 +57,8 @@ import {
   Notebook,
   EditPen,
   School,
-  TrendCharts
+  TrendCharts,
+  Document
 } from '@element-plus/icons-vue'
 import { logout as logoutApi } from '../api/auth'
 
@@ -77,7 +78,8 @@ const menus = {
     { label: '组织管理', path: '/admin/academic', icon: Collection },
     { label: '人员管理', path: '/admin/people', icon: User },
     { label: '课程管理', path: '/admin/courses', icon: Reading },
-    { label: '统计报表', path: '/admin/reports', icon: PieChart }
+    { label: '统计报表', path: '/admin/reports', icon: PieChart },
+    { label: '操作日志', path: '/admin/logs', icon: Document }
   ],
   TEACHER: [
     { label: '教师工作台', path: '/teacher/dashboard', icon: DataBoard },

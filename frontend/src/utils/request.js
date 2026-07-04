@@ -12,6 +12,12 @@ request.interceptors.response.use(
     const res = response.data
 
     if (res.code !== 200) {
+      if (res.code === 401) {
+        localStorage.removeItem('currentUser')
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/401') {
+          window.location.assign('/401')
+        }
+      }
       ElMessage.error(res.message || '请求失败')
       return Promise.reject(res)
     }
@@ -19,6 +25,12 @@ request.interceptors.response.use(
     return res.data
   },
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('currentUser')
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/401') {
+        window.location.assign('/401')
+      }
+    }
     ElMessage.error(error.response?.data?.message || error.message || '网络错误')
     return Promise.reject(error)
   }

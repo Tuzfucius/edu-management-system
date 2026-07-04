@@ -7,6 +7,7 @@ import AcademicManagement from '../views/admin/AcademicManagement.vue'
 import PeopleManagement from '../views/admin/PeopleManagement.vue'
 import CourseManagement from '../views/admin/CourseManagement.vue'
 import AdminReports from '../views/admin/AdminReports.vue'
+import OperationLogs from '../views/admin/OperationLogs.vue'
 import TeacherDashboard from '../views/teacher/TeacherDashboard.vue'
 import TeacherCourses from '../views/teacher/TeacherCourses.vue'
 import GradeManagement from '../views/teacher/GradeManagement.vue'
@@ -14,6 +15,8 @@ import TeacherReports from '../views/teacher/TeacherReports.vue'
 import StudentDashboard from '../views/student/StudentDashboard.vue'
 import CourseSelect from '../views/student/CourseSelect.vue'
 import MyGrades from '../views/student/MyGrades.vue'
+import Unauthorized from '../views/error/Unauthorized.vue'
+import NotFound from '../views/error/NotFound.vue'
 
 const routes = [
     {
@@ -29,6 +32,14 @@ const routes = [
     {
         path: '/login',
         component: Login
+    },
+    {
+        path: '/401',
+        component: Unauthorized
+    },
+    {
+        path: '/404',
+        component: NotFound
     },
     {
         path: '/admin',
@@ -60,6 +71,11 @@ const routes = [
                 path: 'reports',
                 component: AdminReports,
                 meta: { title: '统计报表', role: 'ADMIN' }
+            },
+            {
+                path: 'logs',
+                component: OperationLogs,
+                meta: { title: '操作日志', role: 'ADMIN' }
             }
         ]
     },
@@ -116,7 +132,7 @@ const routes = [
     },
     {
         path: '/:pathMatch(.*)*',
-        redirect: '/'
+        redirect: '/404'
     }
 ]
 
@@ -126,7 +142,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-    if (to.path === '/login') {
+    if (to.path === '/login' || to.path === '/401' || to.path === '/404') {
         return true
     }
 
@@ -137,7 +153,7 @@ router.beforeEach((to) => {
 
     const requiredRole = to.meta.role || to.matched.find((record) => record.meta.role)?.meta.role
     if (requiredRole && currentUser.role !== requiredRole) {
-        return `/${currentUser.role.toLowerCase()}/dashboard`
+        return '/401'
     }
 
     return true
