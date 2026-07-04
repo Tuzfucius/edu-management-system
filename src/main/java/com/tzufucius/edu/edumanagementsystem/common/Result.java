@@ -22,8 +22,24 @@ public class Result<T> {
         return new Result<>(500, message, null);
     }
 
+    public static <T> Result<T> badRequest(String message) {
+        return new Result<>(400, message, null);
+    }
+
     public static <T> Result<T> unauthorized(String message) {
         return new Result<>(401, message, null);
+    }
+
+    public static <T> Result<T> forbidden(String message) {
+        return new Result<>(403, message, null);
+    }
+
+    public static <T> Result<T> notFound(String message) {
+        return new Result<>(404, message, null);
+    }
+
+    public static <T> Result<T> serverError(String message) {
+        return new Result<>(500, message, null);
     }
 
     public int getCode() {
