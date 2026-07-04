@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: 教务管理系统 API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     统一响应结构为 `{ code, message, data }`，其中 `code === 200` 表示业务成功。
-    当前版本覆盖登录、基础数据、用户、学生、教师、任课、选课成绩、教师指导学生和报表接口。
+    当前版本覆盖登录、基础数据、用户、学生、教师、任课、选课成绩、教师指导学生、报表和操作日志接口。
 servers:
   - url: http://localhost:8080/edu
     description: 本地 Spring Boot 服务
@@ -22,6 +22,7 @@ tags:
   - name: StudentCourse
   - name: TeacherStudent
   - name: Report
+  - name: OperationLog
 paths:
   /api/auth/login:
     post:
@@ -136,6 +137,21 @@ paths:
     get: { tags: [Report], summary: 成绩分布, responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/reports/teaching-load:
     get: { tags: [Report], summary: 教师任课工作量, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/operation-logs:
+    get:
+      tags: [OperationLog]
+      summary: 操作日志分页查询
+      parameters:
+        - { name: moduleName, in: query, required: false, schema: { type: string }, description: 模块名称 }
+        - { name: operationType, in: query, required: false, schema: { type: string }, description: 操作类型 }
+        - { name: userId, in: query, required: false, schema: { type: integer, format: int64 }, description: 操作用户ID }
+        - { name: startTime, in: query, required: false, schema: { type: string }, description: 开始时间，格式 yyyy-MM-dd HH:mm:ss }
+        - { name: endTime, in: query, required: false, schema: { type: string }, description: 结束时间，格式 yyyy-MM-dd HH:mm:ss }
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 }, description: 页码 }
+        - { name: size, in: query, required: false, schema: { type: integer, default: 10 }, description: 每页数量 }
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
 components:
   parameters:
     Id:
