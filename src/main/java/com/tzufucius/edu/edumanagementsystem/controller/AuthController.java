@@ -3,39 +3,35 @@ package com.tzufucius.edu.edumanagementsystem.controller;
 import com.tzufucius.edu.edumanagementsystem.common.Result;
 import com.tzufucius.edu.edumanagementsystem.dto.LoginRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.LoginUserVO;
+import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private final AcademicBusinessService academicBusinessService;
+
+    public AuthController(AcademicBusinessService academicBusinessService) {
+        this.academicBusinessService = academicBusinessService;
+    }
+
     @PostMapping("/login")
     public Result<LoginUserVO> login(@RequestBody LoginRequest request, HttpSession session) {
-        if (request.getUsername() == null || request.getPassword() == null || request.getRole() == null) {
-            return Result.error("用户名、密码和角色不能为空");
-        }
-
-        if (!"123456".equals(request.getPassword())) {
-            return Result.error("密码错误");
-        }
-
-        LoginUserVO user;
-
-        switch (request.getRole()) {
-            case "ADMIN":
-                user = new LoginUserVO(1L, request.getUsername(), "系统管理员", "ADMIN");
-                break;
-            case "TEACHER":
-                user = new LoginUserVO(2L, request.getUsername(), "张老师", "TEACHER");
-                break;
-            case "STUDENT":
-                user = new LoginUserVO(3L, request.getUsername(), "李同学", "STUDENT");
-                break;
-            default:
-                return Result.error("角色不合法");
-        }
-
+        Map<String, Object> loginUser = academicBusinessService.login(
+                request.getUsername(),
+                request.getPassword(),
+                request.getRole()
+        );
+        LoginUserVO user = new LoginUserVO(
+                Long.parseLong(loginUser.get("id").toString()),
+                loginUser.get("username").toString(),
+                loginUser.get("displayName").toString(),
+                loginUser.get("role").toString()
+        );
         session.setAttribute("loginUser", user);
         return Result.success(user);
     }
