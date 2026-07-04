@@ -1,6 +1,6 @@
 # 教务管理系统
 
-本项目是《Java应用课程设计》的教务管理系统，采用 Spring Boot + Maven + MySQL 技术栈。当前阶段重点是完成数据库设计、项目文件架构和后续智能体开发上下文，为登录、权限、基础信息维护、选课、成绩录入和统计报表功能打基础。
+本项目是《Java应用课程设计》的教务管理系统，采用 Spring Boot + Maven + MySQL 后端和 Vue 3 + Element Plus 前端。当前后端数据库与部分基础业务模块已经完成，前端已经进入页面骨架和业务界面规划阶段。
 
 ## 项目目标
 
@@ -17,7 +17,7 @@
 - 后端：Spring Boot 4.1.0、Java 17、Maven
 - 数据库：MySQL
 - 数据访问：Spring JDBC / JdbcTemplate
-- 页面方案：前端尚未最终确定，当前规划优先采用 Thymeleaf + Bootstrap + ECharts，避免过早引入复杂前后端分离架构。
+- 前端：Vue 3、Vite、Element Plus、Vue Router、Axios、ECharts
 - 开发环境：Windows 11；如需 Python 辅助脚本，默认 conda 环境为 `low_numpy`。
 - 本机 MySQL 客户端路径：`C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe`。在 PowerShell 中执行 SQL 时优先使用该绝对路径。
 
@@ -28,7 +28,8 @@
 ├─ docs/                  需求、整体规划、数据库设计等课程文档
 ├─ sql/                   手动执行的 MySQL 初始化脚本
 ├─ src/main/java/         Spring Boot 后端 Java 源码
-├─ src/main/resources/    Spring Boot 配置、静态资源、模板
+├─ src/main/resources/    Spring Boot 配置
+├─ frontend/              Vue 3 + Element Plus 前端工程
 ├─ src/test/java/         后端测试代码
 ├─ pom.xml                Maven 项目配置
 └─ README.md              项目说明和智能体上下文入口
@@ -96,8 +97,9 @@ teacher + student -> teacher_student
 
 后续智能体开发时应遵守以下约定：
 
-- 优先阅读 `README.md`、`docs/README.md`、`docs/整体计划.md`、`docs/数据库计划.md`、`docs/java任务书.txt`。
+- 优先阅读 `README.md`、`docs/README.md`、`docs/整体计划.md`、`docs/数据库计划.md`、`docs/前端开发计划.md`、`docs/java任务书.txt`。
 - 涉及数据库表结构时，以 `docs/数据库计划.md` 和 `sql/02_create_tables.sql` 为准。
+- 涉及前端页面、路由和交互规划时，以 `docs/前端开发计划.md` 为准。
 - 涉及课程评分点时，以 `docs/java任务书.txt` 为准。
 - 使用 CodeGraph 进行结构化代码理解。本项目已初始化 CodeGraph；新增或大幅调整 Java 代码后，可执行 `codegraph index` 更新索引。
 - 需要执行 MySQL 命令时，使用本机绝对路径 `C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe`，不要假设 `mysql` 已加入 PATH。
