@@ -40,6 +40,13 @@
           登录
         </el-button>
       </el-form>
+
+      <div class="quick-login">
+        <span>演示账号</span>
+        <el-button link type="primary" @click="fillDemo('ADMIN')">管理员</el-button>
+        <el-button link type="primary" @click="fillDemo('TEACHER')">教师</el-button>
+        <el-button link type="primary" @click="fillDemo('STUDENT')">学生</el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -57,6 +64,18 @@ const loginForm = reactive({
   role: ''
 })
 
+const demoUsers = {
+  ADMIN: { username: 'admin', displayName: '系统管理员' },
+  TEACHER: { username: 'teacher01', displayName: '张老师' },
+  STUDENT: { username: 'student01', displayName: '李同学' }
+}
+
+function fillDemo(role) {
+  loginForm.username = demoUsers[role].username
+  loginForm.password = '123456'
+  loginForm.role = role
+}
+
 function handleLogin() {
   if (!loginForm.username) {
     ElMessage.warning('请输入用户名')
@@ -73,8 +92,19 @@ function handleLogin() {
     return
   }
 
+  const demoUser = demoUsers[loginForm.role] || {
+    username: loginForm.username,
+    displayName: loginForm.username
+  }
+
+  localStorage.setItem('currentUser', JSON.stringify({
+    username: loginForm.username,
+    displayName: demoUser.displayName,
+    role: loginForm.role
+  }))
+
   ElMessage.success('登录成功')
-  router.push('/dashboard')
+  router.push(`/${loginForm.role.toLowerCase()}/dashboard`)
 }
 </script>
 
@@ -89,7 +119,7 @@ function handleLogin() {
 
 .login-card {
   width: 380px;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .title-area {
@@ -112,5 +142,14 @@ function handleLogin() {
 .login-button {
   width: 100%;
   height: 40px;
+}
+
+.quick-login {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 13px;
+  text-align: center;
 }
 </style>
