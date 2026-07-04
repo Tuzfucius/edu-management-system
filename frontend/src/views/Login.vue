@@ -55,6 +55,7 @@
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import  { login } from '../api/auth.js'
 
 const router = useRouter()
 
@@ -76,7 +77,7 @@ function fillDemo(role) {
   loginForm.role = role
 }
 
-function handleLogin() {
+async function handleLogin() {
   if (!loginForm.username) {
     ElMessage.warning('请输入用户名')
     return
@@ -92,20 +93,18 @@ function handleLogin() {
     return
   }
 
-  const demoUser = demoUsers[loginForm.role] || {
+  const user = await login({
     username: loginForm.username,
-    displayName: loginForm.username
-  }
-
-  localStorage.setItem('currentUser', JSON.stringify({
-    username: loginForm.username,
-    displayName: demoUser.displayName,
+    password: loginForm.password,
     role: loginForm.role
-  }))
+  })
+
+  localStorage.setItem('currentUser', JSON.stringify(user))
 
   ElMessage.success('登录成功')
-  router.push(`/${loginForm.role.toLowerCase()}/dashboard`)
+  router.push(`/${user.role.toLowerCase()}/dashboard`)
 }
+
 </script>
 
 <style scoped>
