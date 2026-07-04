@@ -91,6 +91,7 @@ class AcademicBusinessControllerTest {
                                 """.formatted(fixture.studentId(), taskId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+        assertOperationLog("选课管理", "SELECT_COURSE");
 
         Long studentCourseId = jdbcTemplate.queryForObject("""
                 SELECT id FROM student_course
@@ -101,9 +102,10 @@ class AcademicBusinessControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"score":88,"remark":"测试录入"}
-                                """))
+                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+        assertOperationLog("成绩管理", "UPDATE_SCORE");
 
         mockMvc.perform(get("/api/student-courses").param("studentId", fixture.studentId().toString()))
                 .andExpect(status().isOk())
@@ -112,6 +114,31 @@ class AcademicBusinessControllerTest {
         mockMvc.perform(delete("/api/student-courses/{id}", studentCourseId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+        assertOperationLog("选课管理", "DROP_COURSE");
+    }
+
+    @Test
+    void selectCourseShouldRejectTimeConflict() throws Exception {
+        Fixture fixture = createFixture();
+
+        Long firstTaskId = insertTeachingTask(fixture.courseId(), fixture.teacherId(), 2, 3, 4);
+        mockMvc.perform(post("/api/student-courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"studentId":%d,"teachingTaskId":%d}
+                                """.formatted(fixture.studentId(), firstTaskId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+
+        Long conflictTaskId = insertTeachingTask(fixture.courseId(), fixture.teacherId(), 2, 4, 5);
+        mockMvc.perform(post("/api/student-courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"studentId":%d,"teachingTaskId":%d}
+                                """.formatted(fixture.studentId(), conflictTaskId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value("该时间段已有已选课程，不能重复选课"));
     }
 
     @Test
@@ -218,6 +245,29 @@ class AcademicBusinessControllerTest {
                 VALUES (?, ?, 3.0, 48, '必修', '考试', 1)
                 """, "COUR-" + suffix, "测试课程" + suffix);
         return queryId("course", "course_code", "COUR-" + suffix);
+    }
+
+    private Long insertTeachingTask(Long courseId, Long teacherId, int weekday, int startSection, int endSection) {
+        jdbcTemplate.update("""
+                INSERT INTO teaching_task(course_id, teacher_id, semester, weekday, start_section,
+                                          end_section, weeks, classroom, capacity, selected_count, task_status)
+                VALUES (?, ?, '2025-2026-1', ?, ?, ?, '1-16周', 'A302', 60, 0, 1)
+                """, courseId, teacherId, weekday, startSection, endSection);
+        return jdbcTemplate.queryForObject("""
+                SELECT id
+                FROM teaching_task
+                WHERE course_id = ? AND teacher_id = ? AND weekday = ? AND start_section = ? AND end_section = ?
+                ORDER BY id DESC LIMIT 1
+                """, Long.class, courseId, teacherId, weekday, startSection, endSection);
+    }
+
+    private void assertOperationLog(String moduleName, String operationType) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM operation_log
+                WHERE module_name = ? AND operation_type = ?
+                """, Integer.class, moduleName, operationType);
+        org.junit.jupiter.api.Assertions.assertTrue(count != null && count > 0);
     }
 
     private Long queryId(String tableName, String columnName, String value) {

@@ -285,6 +285,17 @@ public class AcademicBusinessDao {
                 """ + condition, args);
     }
 
+    public int countStudentCourseTimeConflict(Long studentId, String semester, Object weekday, Object startSection, Object endSection) {
+        return count("""
+                SELECT COUNT(*)
+                FROM student_course sc
+                JOIN teaching_task tt ON tt.id = sc.teaching_task_id
+                WHERE sc.student_id = ? AND sc.status = 1
+                  AND tt.task_status <> 0 AND tt.semester = ? AND tt.weekday = ?
+                  AND tt.start_section <= ? AND tt.end_section >= ?
+                """, studentId, semester, weekday, endSection, startSection);
+    }
+
     public List<Map<String, Object>> listStudentCourses(Long studentId, Long teacherId) {
         String base = """
                 SELECT sc.id, sc.student_id AS studentId, sc.teaching_task_id AS teachingTaskId,
@@ -338,7 +349,7 @@ public class AcademicBusinessDao {
     public int reactivateStudentCourse(Long id) {
         return jdbcTemplate.update("""
                 UPDATE student_course
-                SET status = 1
+                SET status = 1, select_time = NOW()
                 WHERE id = ?
                 """, id);
     }

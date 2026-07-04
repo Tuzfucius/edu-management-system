@@ -2,6 +2,9 @@ package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
+import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,9 +14,11 @@ import java.util.Map;
 @RequestMapping("/api/teachers")
 public class TeacherController {
     private final AcademicBusinessService service;
+    private final OperationLogService operationLogService;
 
-    public TeacherController(AcademicBusinessService service) {
+    public TeacherController(AcademicBusinessService service, OperationLogService operationLogService) {
         this.service = service;
+        this.operationLogService = operationLogService;
     }
 
     @GetMapping
@@ -32,20 +37,23 @@ public class TeacherController {
     }
 
     @PostMapping
-    public Result<Void> create(@RequestBody Map<String, Object> body) {
+    public Result<Void> create(@RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
         service.createTeacher(body);
+        operationLogService.record(request, session, "教师管理", "INSERT", "teacher", null, "新增教师：" + body.get("teacherName"));
         return Result.success(null);
     }
 
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
         service.updateTeacher(id, body);
+        operationLogService.record(request, session, "教师管理", "UPDATE", "teacher", id, "修改教师：" + body.get("teacherName"));
         return Result.success(null);
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
+    public Result<Void> delete(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
         service.deleteTeacher(id);
+        operationLogService.record(request, session, "教师管理", "DISABLE", "teacher", id, "停用教师");
         return Result.success(null);
     }
 }

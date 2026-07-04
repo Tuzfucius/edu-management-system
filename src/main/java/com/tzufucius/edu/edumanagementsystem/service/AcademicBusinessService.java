@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.service;
 
 import com.tzufucius.edu.edumanagementsystem.dao.AcademicBusinessDao;
+import com.tzufucius.edu.edumanagementsystem.exception.BusinessException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -242,7 +243,7 @@ public class AcademicBusinessService {
     }
 
     @Transactional
-    public void selectCourse(Map<String, Object> body) {
+    public Long selectCourse(Map<String, Object> body) {
         Long studentId = requiredId(longValue(body.get("studentId")), "学生ID不能为空");
         Long teachingTaskId = requiredId(longValue(body.get("teachingTaskId")), "任课ID不能为空");
         Map<String, Object> task = getTeachingTask(teachingTaskId);
@@ -255,12 +256,23 @@ public class AcademicBusinessService {
         if (existed != null && intValue(existed.get("status")) == 1) {
             throw new RuntimeException("不能重复选课");
         }
+        if (hasCourseTime(task) && dao.countStudentCourseTimeConflict(
+                studentId,
+                text(task.get("semester")),
+                task.get("weekday"),
+                task.get("startSection"),
+                task.get("endSection")
+        ) > 0) {
+            throw new BusinessException("该时间段已有已选课程，不能重复选课");
+        }
         if (existed == null) {
             dao.insertStudentCourse(studentId, teachingTaskId);
         } else {
             dao.reactivateStudentCourse(longValue(existed.get("id")));
         }
         dao.updateSelectedCount(teachingTaskId, 1);
+        Map<String, Object> selected = dao.findStudentCourseByStudentAndTask(studentId, teachingTaskId);
+        return longValue(selected.get("id"));
     }
 
     @Transactional
@@ -388,6 +400,13 @@ public class AcademicBusinessService {
         if (isBlank(relation.get("guideType"))) {
             throw new RuntimeException("指导类型不能为空");
         }
+    }
+
+    private boolean hasCourseTime(Map<String, Object> task) {
+        return !isBlank(task.get("semester"))
+                && task.get("weekday") != null
+                && task.get("startSection") != null
+                && task.get("endSection") != null;
     }
 
     private Map<String, Object> fallbackUser(String username, String role) {

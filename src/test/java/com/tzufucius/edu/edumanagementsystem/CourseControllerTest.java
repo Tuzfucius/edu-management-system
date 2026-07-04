@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,9 @@ class CourseControllerTest {
 
     @Autowired
     private CourseService courseService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void listCourses() throws Exception {
@@ -50,9 +54,11 @@ class CourseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"courseCode":"CTRL-COURSE-ADD","courseName":"Controller新增课程","credit":3.0,"totalHours":48,"courseType":"必修","examType":"考试"}
-                                """))
+                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+
+        assertOperationLog("课程管理", "INSERT");
     }
 
     @Test
@@ -75,9 +81,11 @@ class CourseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"courseCode":"CTRL-COURSE-UPD","courseName":"Controller修改后课程","credit":3.5,"totalHours":56,"courseType":"选修","examType":"考查"}
-                                """))
+                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+
+        assertOperationLog("课程管理", "UPDATE");
     }
 
     @Test
@@ -87,6 +95,17 @@ class CourseControllerTest {
         mockMvc.perform(delete("/api/courses/{id}", course.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+
+        assertOperationLog("课程管理", "DISABLE");
+    }
+
+    private void assertOperationLog(String moduleName, String operationType) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM operation_log
+                WHERE module_name = ? AND operation_type = ?
+                """, Integer.class, moduleName, operationType);
+        org.junit.jupiter.api.Assertions.assertTrue(count != null && count > 0);
     }
 
     private Course createCourse(String code, String name) {
