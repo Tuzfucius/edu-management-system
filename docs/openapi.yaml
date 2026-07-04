@@ -1,426 +1,141 @@
 openapi: 3.0.3
 info:
   title: 教务管理系统 API
-  version: 0.1.0
+  version: 0.2.0
   description: |
-    当前文档覆盖登录接口，以及已完成 Service 的基础模块接口：学院、专业、教研室、班级、课程。
-    教师、学生、任课、选课、成绩、统计报表等页面目前仍使用前端静态数据，不在本版本接口范围内。
+    统一响应结构为 `{ code, message, data }`，其中 `code === 200` 表示业务成功。
+    当前版本覆盖登录、基础数据、用户、学生、教师、任课、选课成绩、教师指导学生和报表接口。
 servers:
   - url: http://localhost:8080/edu
     description: 本地 Spring Boot 服务
 tags:
   - name: Auth
-    description: 登录与会话
   - name: College
-    description: 学院管理
   - name: Major
-    description: 专业管理
   - name: Department
-    description: 教研室管理
   - name: ClassInfo
-    description: 班级管理
   - name: Course
-    description: 课程管理
+  - name: User
+  - name: Student
+  - name: Teacher
+  - name: TeachingTask
+  - name: StudentCourse
+  - name: TeacherStudent
+  - name: Report
 paths:
   /api/auth/login:
     post:
       tags: [Auth]
       summary: 登录
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
+        $ref: '#/components/requestBodies/Login'
       responses:
         '200':
-          description: 登录结果
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/LoginUser'
+          $ref: '#/components/responses/Result'
   /api/auth/me:
     get:
       tags: [Auth]
       summary: 获取当前登录用户
       responses:
         '200':
-          description: 当前用户；未登录时 code 为 401
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/LoginUser'
+          $ref: '#/components/responses/Result'
   /api/auth/logout:
     post:
       tags: [Auth]
       summary: 退出登录
       responses:
         '200':
-          description: 退出结果
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Result'
+          $ref: '#/components/responses/Result'
   /api/colleges:
-    get:
-      tags: [College]
-      summary: 查询学院列表
-      responses:
-        '200':
-          description: 学院列表
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/College'
-    post:
-      tags: [College]
-      summary: 新增学院
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CollegeInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [College], summary: 学院列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [College], summary: 新增学院, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/colleges/{id}:
-    get:
-      tags: [College]
-      summary: 查询学院详情
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          description: 学院详情
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/College'
-    put:
-      tags: [College]
-      summary: 修改学院
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CollegeInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
-    delete:
-      tags: [College]
-      summary: 停用学院
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [College], summary: 学院详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [College], summary: 修改学院, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [College], summary: 停用学院, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/majors:
-    get:
-      tags: [Major]
-      summary: 查询专业列表
-      responses:
-        '200':
-          description: 专业列表
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Major'
-    post:
-      tags: [Major]
-      summary: 新增专业
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MajorInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [Major], summary: 专业列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [Major], summary: 新增专业, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/majors/{id}:
-    get:
-      tags: [Major]
-      summary: 查询专业详情
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          description: 专业详情
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Major'
-    put:
-      tags: [Major]
-      summary: 修改专业
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MajorInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
-    delete:
-      tags: [Major]
-      summary: 停用专业
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [Major], summary: 专业详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [Major], summary: 修改专业, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [Major], summary: 停用专业, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/departments:
-    get:
-      tags: [Department]
-      summary: 查询教研室列表
-      responses:
-        '200':
-          description: 教研室列表
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Department'
-    post:
-      tags: [Department]
-      summary: 新增教研室
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DepartmentInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [Department], summary: 教研室列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [Department], summary: 新增教研室, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/departments/{id}:
-    get:
-      tags: [Department]
-      summary: 查询教研室详情
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          description: 教研室详情
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Department'
-    put:
-      tags: [Department]
-      summary: 修改教研室
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DepartmentInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
-    delete:
-      tags: [Department]
-      summary: 停用教研室
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [Department], summary: 教研室详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [Department], summary: 修改教研室, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [Department], summary: 停用教研室, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/classes:
-    get:
-      tags: [ClassInfo]
-      summary: 查询班级列表
-      responses:
-        '200':
-          description: 班级列表
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ClassInfo'
-    post:
-      tags: [ClassInfo]
-      summary: 新增班级
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ClassInfoInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [ClassInfo], summary: 班级列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [ClassInfo], summary: 新增班级, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/classes/{id}:
-    get:
-      tags: [ClassInfo]
-      summary: 查询班级详情
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          description: 班级详情
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ClassInfo'
-    put:
-      tags: [ClassInfo]
-      summary: 修改班级
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ClassInfoInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
-    delete:
-      tags: [ClassInfo]
-      summary: 停用班级
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [ClassInfo], summary: 班级详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [ClassInfo], summary: 修改班级, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [ClassInfo], summary: 停用班级, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/courses:
-    get:
-      tags: [Course]
-      summary: 查询课程列表
-      responses:
-        '200':
-          description: 课程列表
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Course'
-    post:
-      tags: [Course]
-      summary: 新增课程
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CourseInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [Course], summary: 课程列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [Course], summary: 新增课程, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
   /api/courses/{id}:
-    get:
-      tags: [Course]
-      summary: 查询课程详情
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          description: 课程详情
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Result'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Course'
-    put:
-      tags: [Course]
-      summary: 修改课程
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CourseInput'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
-    delete:
-      tags: [Course]
-      summary: 停用课程
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          $ref: '#/components/responses/ResultOnly'
+    get: { tags: [Course], summary: 课程详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [Course], summary: 修改课程, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [Course], summary: 停用课程, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/users:
+    get: { tags: [User], summary: 用户列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [User], summary: 新增用户, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/users/{id}:
+    get: { tags: [User], summary: 用户详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [User], summary: 修改用户, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [User], summary: 停用用户, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/students:
+    get: { tags: [Student], summary: 学生列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [Student], summary: 新增学生, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/students/{id}:
+    get: { tags: [Student], summary: 学生详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [Student], summary: 修改学生, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [Student], summary: 停用学生, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/students/by-user/{userId}:
+    get: { tags: [Student], summary: 根据登录用户查询学生档案, parameters: [ { name: userId, in: path, required: true, schema: { type: integer, format: int64 } } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/teachers:
+    get: { tags: [Teacher], summary: 教师列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [Teacher], summary: 新增教师, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/teachers/{id}:
+    get: { tags: [Teacher], summary: 教师详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [Teacher], summary: 修改教师, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [Teacher], summary: 停用教师, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/teachers/by-user/{userId}:
+    get: { tags: [Teacher], summary: 根据登录用户查询教师档案, parameters: [ { name: userId, in: path, required: true, schema: { type: integer, format: int64 } } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/teaching-tasks:
+    get: { tags: [TeachingTask], summary: 任课列表, parameters: [ { name: teacherId, in: query, required: false, schema: { type: integer, format: int64 } } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [TeachingTask], summary: 新增任课, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/teaching-tasks/{id}:
+    get: { tags: [TeachingTask], summary: 任课详情, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    put: { tags: [TeachingTask], summary: 修改任课, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [TeachingTask], summary: 停用任课, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/student-courses:
+    get: { tags: [StudentCourse], summary: 选课成绩列表, parameters: [ { name: studentId, in: query, required: false, schema: { type: integer, format: int64 } }, { name: teacherId, in: query, required: false, schema: { type: integer, format: int64 } } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [StudentCourse], summary: 学生选课, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/student-courses/selectable:
+    get: { tags: [StudentCourse], summary: 学生可选课程, parameters: [ { name: studentId, in: query, required: true, schema: { type: integer, format: int64 } }, { name: semester, in: query, required: true, schema: { type: string } } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/student-courses/{id}:
+    delete: { tags: [StudentCourse], summary: 学生退课, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/student-courses/{id}/score:
+    put: { tags: [StudentCourse], summary: 录入或修改成绩, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/teacher-students:
+    get: { tags: [TeacherStudent], summary: 指导关系列表, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    post: { tags: [TeacherStudent], summary: 新增指导关系, requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/teacher-students/{id}:
+    put: { tags: [TeacherStudent], summary: 修改指导关系, parameters: [ { $ref: '#/components/parameters/Id' } ], requestBody: { $ref: '#/components/requestBodies/JsonObject' }, responses: { '200': { $ref: '#/components/responses/Result' } } }
+    delete: { tags: [TeacherStudent], summary: 停用指导关系, parameters: [ { $ref: '#/components/parameters/Id' } ], responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/reports/overview:
+    get: { tags: [Report], summary: 概览统计, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/reports/college-students:
+    get: { tags: [Report], summary: 学院学生人数, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/reports/grade-distribution:
+    get: { tags: [Report], summary: 成绩分布, responses: { '200': { $ref: '#/components/responses/Result' } } }
+  /api/reports/teaching-load:
+    get: { tags: [Report], summary: 教师任课工作量, responses: { '200': { $ref: '#/components/responses/Result' } } }
 components:
   parameters:
     Id:
@@ -430,9 +145,28 @@ components:
       schema:
         type: integer
         format: int64
+  requestBodies:
+    Login:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [username, password, role]
+            properties:
+              username: { type: string, example: admin }
+              password: { type: string, example: '123456' }
+              role: { type: string, enum: [ADMIN, TEACHER, STUDENT] }
+    JsonObject:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
   responses:
-    ResultOnly:
-      description: 通用操作结果
+    Result:
+      description: 统一响应。业务失败时 HTTP 状态仍通常为 200，但 code 为 500 或 401。
       content:
         application/json:
           schema:
@@ -444,163 +178,9 @@ components:
         code:
           type: integer
           example: 200
-          description: 200 表示成功；401 表示未登录；500 表示业务失败。
         message:
           type: string
           example: success
         data:
           nullable: true
-      required: [code, message]
-    LoginRequest:
-      type: object
-      properties:
-        username:
-          type: string
-          example: admin
-        password:
-          type: string
-          example: '123456'
-        role:
-          type: string
-          enum: [ADMIN, TEACHER, STUDENT]
-      required: [username, password, role]
-    LoginUser:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        username:
-          type: string
-        displayName:
-          type: string
-        role:
-          type: string
-          enum: [ADMIN, TEACHER, STUDENT]
-    BaseEntity:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        status:
-          type: integer
-          description: 1 正常，0 停用。
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    College:
-      allOf:
-        - $ref: '#/components/schemas/BaseEntity'
-        - $ref: '#/components/schemas/CollegeInput'
-    CollegeInput:
-      type: object
-      properties:
-        collegeCode:
-          type: string
-          example: CS
-        collegeName:
-          type: string
-          example: 计算机学院
-        description:
-          type: string
-          nullable: true
-      required: [collegeCode, collegeName]
-    Major:
-      allOf:
-        - $ref: '#/components/schemas/BaseEntity'
-        - $ref: '#/components/schemas/MajorInput'
-    MajorInput:
-      type: object
-      properties:
-        collegeId:
-          type: integer
-          format: int64
-        majorCode:
-          type: string
-          example: CS-SE
-        majorName:
-          type: string
-          example: 软件工程
-        schoolingYears:
-          type: integer
-          example: 4
-        degreeType:
-          type: string
-          nullable: true
-          example: 工学
-      required: [collegeId, majorCode, majorName, schoolingYears]
-    Department:
-      allOf:
-        - $ref: '#/components/schemas/BaseEntity'
-        - $ref: '#/components/schemas/DepartmentInput'
-    DepartmentInput:
-      type: object
-      properties:
-        collegeId:
-          type: integer
-          format: int64
-        departmentCode:
-          type: string
-          example: CS-DB
-        departmentName:
-          type: string
-          example: 数据库教研室
-        officeLocation:
-          type: string
-          nullable: true
-          example: A302
-      required: [collegeId, departmentCode, departmentName]
-    ClassInfo:
-      allOf:
-        - $ref: '#/components/schemas/BaseEntity'
-        - $ref: '#/components/schemas/ClassInfoInput'
-    ClassInfoInput:
-      type: object
-      properties:
-        majorId:
-          type: integer
-          format: int64
-        classCode:
-          type: string
-          example: SE2401
-        className:
-          type: string
-          example: 软件工程2401班
-        entranceYear:
-          type: integer
-          example: 2024
-      required: [majorId, classCode, className, entranceYear]
-    Course:
-      allOf:
-        - $ref: '#/components/schemas/BaseEntity'
-        - $ref: '#/components/schemas/CourseInput'
-    CourseInput:
-      type: object
-      properties:
-        courseCode:
-          type: string
-          example: CS208
-        courseName:
-          type: string
-          example: 数据库原理
-        credit:
-          type: number
-          format: double
-          example: 3.0
-        totalHours:
-          type: integer
-          nullable: true
-          example: 48
-        courseType:
-          type: string
-          nullable: true
-          example: 必修
-        examType:
-          type: string
-          nullable: true
-          example: 考试
-      required: [courseCode, courseName, credit]
+          description: 具体数据对象、数组或 null。
