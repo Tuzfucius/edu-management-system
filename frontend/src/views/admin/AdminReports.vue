@@ -25,8 +25,21 @@
     </div>
 
     <el-card>
-      <template #header><span class="section-title">教师任课工作量</span></template>
-      <el-table v-loading="loading" :data="teachingLoad" border empty-text="暂无任课统计数据">
+      <template #header>
+        <span class="section-title">教师任课工作量</span>
+      </template>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <el-input v-model="keyword" placeholder="搜索教师姓名" clearable style="width: 220px" />
+          <div class="filter-inline">
+            <span class="muted">最少任课</span>
+            <el-input-number v-model="minTaskCount" :min="0" controls-position="right" style="width: 160px" />
+          </div>
+        </div>
+      </div>
+
+      <el-table v-loading="loading" :data="filteredTeachingLoad" border empty-text="暂无任课统计数据">
         <el-table-column prop="teacherName" label="教师" />
         <el-table-column prop="taskCount" label="任课数量" width="120" />
         <el-table-column prop="selectedCount" label="选课学生数" width="140" />
@@ -37,7 +50,7 @@
 
 <script setup>
 import * as echarts from 'echarts'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getCollegeStudentsReport, getGradeDistributionReport, getOverviewReport, getTeachingLoadReport } from '../../api/report'
 
 const loading = ref(false)
@@ -45,8 +58,13 @@ const overview = ref({})
 const collegeRows = ref([])
 const gradeRows = ref([])
 const teachingLoad = ref([])
+const keyword = ref('')
+const minTaskCount = ref(0)
 const collegeChartRef = ref()
 const gradeChartRef = ref()
+
+let collegeChart = null
+let gradeChart = null
 
 const reportCards = computed(() => [
   { title: '学生总数', value: overview.value.studentCount ?? 0, extra: '正常学籍学生' },
@@ -55,7 +73,19 @@ const reportCards = computed(() => [
   { title: '选课记录', value: overview.value.selectionCount ?? 0, extra: '当前有效选课' }
 ])
 
+const filteredTeachingLoad = computed(() =>
+  teachingLoad.value.filter((item) => {
+    const matchKeyword = !keyword.value || String(item.teacherName || '').includes(keyword.value)
+    const matchTaskCount = Number(item.taskCount || 0) >= Number(minTaskCount.value || 0)
+    return matchKeyword && matchTaskCount
+  })
+)
+
 onMounted(refresh)
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  disposeCharts()
+})
 
 async function refresh() {
   loading.value = true
@@ -68,31 +98,58 @@ async function refresh() {
     ])
     await nextTick()
     renderCharts()
+    window.addEventListener('resize', handleResize)
   } finally {
     loading.value = false
   }
 }
 
 function renderCharts() {
-  const collegeChart = echarts.init(collegeChartRef.value)
+  if (!collegeChartRef.value || !gradeChartRef.value) {
+    return
+  }
+
+  collegeChart = echarts.getInstanceByDom(collegeChartRef.value) || echarts.init(collegeChartRef.value)
+  gradeChart = echarts.getInstanceByDom(gradeChartRef.value) || echarts.init(gradeChartRef.value)
+
   collegeChart.setOption({
-    tooltip: {},
-    xAxis: { type: 'category', data: collegeRows.value.map((item) => item.name) },
-    yAxis: { type: 'value' },
-    series: [{ type: 'bar', data: collegeRows.value.map((item) => item.value), itemStyle: { color: '#2563eb' } }]
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 52, right: 24, top: 40, bottom: 48, containLabel: true },
+    xAxis: {
+      type: 'category',
+      name: '学院',
+      axisLabel: { interval: 0, rotate: 15 },
+      data: collegeRows.value.map((item) => item.name)
+    },
+    yAxis: {
+      type: 'value',
+      name: '学生人数'
+    },
+    series: [
+      {
+        type: 'bar',
+        data: collegeRows.value.map((item) => item.value),
+        itemStyle: { color: '#2563eb' }
+      }
+    ]
   })
 
-  const gradeChart = echarts.init(gradeChartRef.value)
   gradeChart.setOption({
     tooltip: { trigger: 'item' },
+    legend: { bottom: 0, left: 'center' },
     series: [{ type: 'pie', radius: ['42%', '70%'], data: gradeRows.value }]
   })
 }
-</script>
 
-<style scoped>
-.chart {
-  width: 100%;
-  height: 280px;
+function handleResize() {
+  collegeChart?.resize()
+  gradeChart?.resize()
 }
-</style>
+
+function disposeCharts() {
+  collegeChart?.dispose()
+  gradeChart?.dispose()
+  collegeChart = null
+  gradeChart = null
+}
+</script>

@@ -79,10 +79,12 @@
       <el-tab-pane label="指导关系" name="guides">
         <el-card>
           <div class="toolbar">
-            <span class="section-title">教师指导学生</span>
+            <div class="toolbar-left">
+              <el-input v-model="guideKeyword" placeholder="搜索教师、学生或指导类型" clearable style="width: 280px" />
+            </div>
             <el-button type="primary" @click="openGuideDialog()">新增关系</el-button>
           </div>
-          <el-table v-loading="loading" :data="guides" border empty-text="暂无指导关系">
+          <el-table v-loading="loading" :data="filteredGuides" border empty-text="暂无指导关系">
             <el-table-column prop="teacherName" label="教师" />
             <el-table-column prop="studentNo" label="学号" width="130" />
             <el-table-column prop="studentName" label="学生" />
@@ -210,6 +212,7 @@ import { createStudent, listStudents, removeStudent, updateStudent } from '../..
 import { createTeacher, listTeachers, removeTeacher, updateTeacher } from '../../api/teacher'
 import { createUser, listUsers, removeUser, updateUser } from '../../api/user'
 import { createTeacherStudent, listTeacherStudents, removeTeacherStudent, updateTeacherStudent } from '../../api/teacherStudent'
+import { filterRows as sharedFilterRows } from '../../utils/filter'
 
 const activeTab = ref('students')
 const loading = ref(false)
@@ -222,6 +225,7 @@ const departments = ref([])
 const studentKeyword = ref('')
 const teacherKeyword = ref('')
 const userKeyword = ref('')
+const guideKeyword = ref('')
 const userDialog = ref(false)
 const studentDialog = ref(false)
 const teacherDialog = ref(false)
@@ -236,6 +240,10 @@ const teacherUsers = computed(() => users.value.filter((item) => item.role === '
 const filteredStudents = computed(() => filterRows(students.value, studentKeyword.value, ['studentNo', 'studentName', 'className', 'majorName']))
 const filteredTeachers = computed(() => filterRows(teachers.value, teacherKeyword.value, ['teacherNo', 'teacherName', 'departmentName']))
 const filteredUsers = computed(() => filterRows(users.value, userKeyword.value, ['username', 'role']))
+const filteredGuides = computed(() => sharedFilterRows(guides.value, {
+  keyword: guideKeyword.value,
+  fields: ['teacherName', 'studentNo', 'studentName', 'guideType']
+}))
 
 onMounted(refreshAll)
 

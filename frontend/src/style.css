@@ -76,6 +76,42 @@ body {
   gap: 16px;
 }
 
+.chart {
+  width: 100%;
+  min-height: 280px;
+}
+
+.chart--wide {
+  min-height: 320px;
+}
+
+.chart--small {
+  min-height: 260px;
+}
+
+.pie-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.pie-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pie-panel__title {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.filter-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -123,6 +159,10 @@ body {
   }
 
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pie-grid {
     grid-template-columns: 1fr;
   }
 }

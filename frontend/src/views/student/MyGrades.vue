@@ -9,12 +9,12 @@
       <el-card class="stat-card">
         <div class="stat-title">平均分</div>
         <div class="stat-number">{{ averageScore }}</div>
-        <div class="stat-extra">仅统计已录入成绩</div>
+        <div class="stat-extra">仅统计当前筛选结果</div>
       </el-card>
       <el-card class="stat-card">
         <div class="stat-title">已选课程</div>
-        <div class="stat-number">{{ rows.length }}</div>
-        <div class="stat-extra">当前有效选课</div>
+        <div class="stat-number">{{ displayRows.length }}</div>
+        <div class="stat-extra">当前筛选结果</div>
       </el-card>
       <el-card class="stat-card">
         <div class="stat-title">已获学分</div>
@@ -29,7 +29,22 @@
     </div>
 
     <el-card>
-      <el-table v-loading="loading" :data="rows" border empty-text="暂无成绩数据">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <el-select v-model="semester" clearable placeholder="学期" style="width: 160px">
+            <el-option v-for="item in semesterOptions" :key="item" :label="item" :value="item" />
+          </el-select>
+          <el-select v-model="gradeState" clearable placeholder="成绩状态" style="width: 140px">
+            <el-option label="全部" value="全部" />
+            <el-option label="已录入" value="已录入" />
+            <el-option label="未录入" value="未录入" />
+          </el-select>
+          <el-input v-model="keyword" placeholder="搜索课程、教师或课程编号" clearable style="width: 240px" />
+        </div>
+      </div>
+
+      <el-table v-loading="loading" :data="displayRows" border empty-text="暂无成绩数据">
+        <el-table-column prop="courseCode" label="课程编号" width="120" />
         <el-table-column prop="courseName" label="课程" />
         <el-table-column prop="teacherName" label="教师" width="110" />
         <el-table-column prop="credit" label="学分" width="80" />
@@ -39,7 +54,9 @@
         </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.gradeStatus === 1 ? 'success' : 'warning'" effect="plain">{{ row.gradeStatus === 1 ? gradeText(row.score) : '未录入' }}</el-tag>
+            <el-tag :type="Number(row.gradeStatus) === 1 ? 'success' : 'warning'" effect="plain">
+              {{ Number(row.gradeStatus) === 1 ? gradeText(row.score) : '未录入' }}
+            </el-tag>
           </template>
         </el-table-column>
       </el-table>
@@ -51,15 +68,45 @@
 import { computed, onMounted, ref } from 'vue'
 import { getStudentByUser } from '../../api/student'
 import { listStudentCourses } from '../../api/studentCourse'
+import { filterRows, pickPreferredValue, uniqueValues } from '../../utils/filter'
 
 const loading = ref(false)
 const rows = ref([])
 const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null')
+const semester = ref('')
+const gradeState = ref('全部')
+const keyword = ref('')
 
-const gradedRows = computed(() => rows.value.filter((item) => item.score !== null && item.score !== undefined))
-const averageScore = computed(() => gradedRows.value.length ? (gradedRows.value.reduce((sum, item) => sum + Number(item.score), 0) / gradedRows.value.length).toFixed(1) : '-')
-const earnedCredits = computed(() => gradedRows.value.filter((item) => Number(item.score) >= 60).reduce((sum, item) => sum + Number(item.credit || 0), 0))
-const pendingCount = computed(() => rows.value.length - gradedRows.value.length)
+const semesterOptions = computed(() => uniqueValues(rows.value, 'semester').sort().reverse())
+
+const displayRows = computed(() =>
+  filterRows(rows.value, {
+    keyword: keyword.value,
+    fields: ['courseCode', 'courseName', 'teacherName', 'semester'],
+    predicates: [
+      (row) => !semester.value || row.semester === semester.value,
+      (row) => {
+        if (gradeState.value === '全部') {
+          return true
+        }
+        const graded = Number(row.gradeStatus) === 1
+        return gradeState.value === '已录入' ? graded : !graded
+      }
+    ]
+  })
+)
+
+const gradedRows = computed(() => displayRows.value.filter((item) => Number(item.gradeStatus) === 1))
+const averageScore = computed(() =>
+  gradedRows.value.length ? (gradedRows.value.reduce((sum, item) => sum + Number(item.score), 0) / gradedRows.value.length).toFixed(1) : '-'
+)
+const earnedCredits = computed(() =>
+  gradedRows.value
+    .filter((item) => Number(item.score) >= 60)
+    .reduce((sum, item) => sum + Number(item.credit || 0), 0)
+    .toFixed(1)
+)
+const pendingCount = computed(() => displayRows.value.length - gradedRows.value.length)
 
 onMounted(refresh)
 
@@ -68,6 +115,7 @@ async function refresh() {
   try {
     const student = await getStudentByUser(currentUser.id)
     rows.value = await listStudentCourses({ studentId: student.id })
+    semester.value = pickPreferredValue(semesterOptions.value, '2025-2026-1') || ''
   } finally {
     loading.value = false
   }

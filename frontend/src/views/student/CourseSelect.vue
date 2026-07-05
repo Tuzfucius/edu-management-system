@@ -12,6 +12,12 @@
             <el-option label="2025-2026-1" value="2025-2026-1" />
             <el-option label="2025-2026-2" value="2025-2026-2" />
           </el-select>
+          <el-select v-model="courseState" clearable placeholder="课程状态" style="width: 140px">
+            <el-option label="全部" value="全部" />
+            <el-option label="可选" value="可选" />
+            <el-option label="已选" value="已选" />
+            <el-option label="已满" value="已满" />
+          </el-select>
           <el-input v-model="keyword" placeholder="搜索课程或教师" clearable style="width: 240px" />
         </div>
       </div>
@@ -26,6 +32,11 @@
         <el-table-column prop="credit" label="学分" width="80" />
         <el-table-column label="容量" width="130">
           <template #default="{ row }">{{ row.selectedCount }} / {{ row.capacity }}</template>
+        </el-table-column>
+        <el-table-column label="课程状态" width="110">
+          <template #default="{ row }">
+            <el-tag :type="courseStatusType(row)" effect="plain">{{ courseStatusText(row) }}</el-tag>
+          </template>
         </el-table-column>
         <el-table-column label="操作" width="130">
           <template #default="{ row }">
@@ -45,15 +56,36 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getStudentByUser } from '../../api/student'
 import { dropCourse, listSelectableCourses, selectCourse } from '../../api/studentCourse'
+import { filterRows } from '../../utils/filter'
 
 const semester = ref('2025-2026-1')
 const keyword = ref('')
+const courseState = ref('全部')
 const loading = ref(false)
 const student = ref(null)
 const courses = ref([])
 const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null')
 
-const filteredCourses = computed(() => courses.value.filter((item) => !keyword.value || item.courseName.includes(keyword.value) || item.teacherName.includes(keyword.value)))
+const filteredCourses = computed(() =>
+  filterRows(courses.value, {
+    keyword: keyword.value,
+    fields: ['courseCode', 'courseName', 'teacherName'],
+    predicates: [
+      (row) => {
+        if (courseState.value === '全部') {
+          return true
+        }
+        if (courseState.value === '已选') {
+          return Number(row.selectedByMe) === 1
+        }
+        if (courseState.value === '已满') {
+          return Number(row.selectedCount) >= Number(row.capacity)
+        }
+        return Number(row.selectedByMe) !== 1 && Number(row.selectedCount) < Number(row.capacity)
+      }
+    ]
+  })
+)
 
 onMounted(refresh)
 
@@ -83,5 +115,25 @@ async function drop(row) {
 
 function formatTime(row) {
   return `周${['一', '二', '三', '四', '五', '六', '日'][Number(row.weekday) - 1] || row.weekday} ${row.startSection}-${row.endSection}节`
+}
+
+function courseStatusText(row) {
+  if (Number(row.selectedByMe) === 1) {
+    return '已选'
+  }
+  if (Number(row.selectedCount) >= Number(row.capacity)) {
+    return '已满'
+  }
+  return '可选'
+}
+
+function courseStatusType(row) {
+  if (Number(row.selectedByMe) === 1) {
+    return 'success'
+  }
+  if (Number(row.selectedCount) >= Number(row.capacity)) {
+    return 'danger'
+  }
+  return 'info'
 }
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="page" v-loading="loading">
     <div>
       <h1 class="page-title">成绩分析</h1>
       <div class="page-description">查看本人任课课程的成绩分布和完成情况。</div>
@@ -13,40 +13,255 @@
       </el-card>
     </div>
 
-    <div class="content-grid">
-      <el-card>
-        <template #header><span class="section-title">数据库原理成绩分布</span></template>
-        <div class="chart-placeholder">
-          <div v-for="bar in ['82%', '68%', '44%', '24%']" :key="bar" class="chart-bar" :style="{ height: bar }" />
+    <el-card>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <el-select v-model="taskId" clearable placeholder="选择课程" style="min-width: 280px">
+            <el-option :label="'全部课程'" :value="''" />
+            <el-option
+              v-for="item in taskOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+          <el-input v-model="keyword" placeholder="搜索学号或姓名" clearable style="width: 220px" />
         </div>
-      </el-card>
+      </div>
 
-      <el-card>
-        <template #header><span class="section-title">课程完成率</span></template>
-        <el-space direction="vertical" fill style="width: 100%">
-          <div>
-            <div class="toolbar"><span>数据库原理</span><span class="muted">76%</span></div>
-            <el-progress :percentage="76" />
-          </div>
-          <div>
-            <div class="toolbar"><span>Java Web 开发</span><span class="muted">31%</span></div>
-            <el-progress :percentage="31" status="warning" />
-          </div>
-          <div>
-            <div class="toolbar"><span>数据库课程设计</span><span class="muted">100%</span></div>
-            <el-progress :percentage="100" status="success" />
-          </div>
-        </el-space>
-      </el-card>
-    </div>
+      <div class="content-grid">
+        <el-card>
+          <template #header>
+            <span class="section-title">{{ selectedTaskLabel }}成绩分布</span>
+          </template>
+          <div ref="barRef" class="chart chart--wide"></div>
+        </el-card>
+
+        <el-card>
+          <template #header>
+            <span class="section-title">成绩录入占比</span>
+          </template>
+          <div ref="pieRef" class="chart chart--small"></div>
+        </el-card>
+      </div>
+
+      <el-table :data="displayRows" border empty-text="暂无成绩记录">
+        <el-table-column prop="studentNo" label="学号" width="120" />
+        <el-table-column prop="studentName" label="姓名" width="100" />
+        <el-table-column prop="courseName" label="课程" />
+        <el-table-column prop="semester" label="学期" width="130" />
+        <el-table-column label="成绩" width="100">
+          <template #default="{ row }">{{ row.score ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="110">
+          <template #default="{ row }">
+            <el-tag :type="Number(row.gradeStatus) === 1 ? 'success' : 'warning'" effect="plain">
+              {{ Number(row.gradeStatus) === 1 ? '已录入' : '未录入' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
   </div>
 </template>
 
 <script setup>
-const cards = [
-  { title: '平均分', value: '84.6', extra: '已录入课程统计' },
-  { title: '最高分', value: '96', extra: '数据库原理' },
-  { title: '及格率', value: '94%', extra: '低于 60 分视为未通过' },
-  { title: '待录入', value: '48', extra: '跨 2 门课程' }
-]
+import * as echarts from 'echarts'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { getTeacherByUser } from '../../api/teacher'
+import { listStudentCourses } from '../../api/studentCourse'
+import { filterRows } from '../../utils/filter'
+
+const loading = ref(false)
+const rows = ref([])
+const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null')
+const taskId = ref('')
+const keyword = ref('')
+const barRef = ref(null)
+const pieRef = ref(null)
+
+let barChart = null
+let pieChart = null
+
+const taskOptions = computed(() => {
+  const seen = new Map()
+  rows.value.forEach((row) => {
+    if (!seen.has(row.teachingTaskId)) {
+      seen.set(row.teachingTaskId, {
+        value: row.teachingTaskId,
+        label: `${row.courseName} · ${row.semester}`
+      })
+    }
+  })
+  return Array.from(seen.values())
+})
+
+const selectedTaskLabel = computed(() => {
+  if (!taskId.value) {
+    return '全部课程'
+  }
+  return taskOptions.value.find((item) => String(item.value) === String(taskId.value))?.label || '全部课程'
+})
+
+const displayRows = computed(() =>
+  filterRows(rows.value, {
+    keyword: keyword.value,
+    fields: ['studentNo', 'studentName', 'courseCode', 'courseName', 'semester'],
+    predicates: [(row) => !taskId.value || String(row.teachingTaskId) === String(taskId.value)]
+  })
+)
+
+const gradedRows = computed(() => displayRows.value.filter((row) => Number(row.gradeStatus) === 1))
+const pendingRows = computed(() => displayRows.value.filter((row) => Number(row.gradeStatus) !== 1))
+
+const cards = computed(() => {
+  const validScores = gradedRows.value.filter((row) => row.score !== null && row.score !== undefined)
+  const averageScore = validScores.length
+    ? (validScores.reduce((sum, row) => sum + Number(row.score), 0) / validScores.length).toFixed(1)
+    : '-'
+  const passRate = validScores.length
+    ? `${Math.round((validScores.filter((row) => Number(row.score) >= 60).length / validScores.length) * 100)}%`
+    : '-'
+
+  return [
+    { title: '选课人数', value: displayRows.value.length, extra: '当前筛选课程' },
+    { title: '已录成绩', value: gradedRows.value.length, extra: `未录 ${pendingRows.value.length} 人` },
+    { title: '平均分', value: averageScore, extra: '仅统计已录入成绩' },
+    { title: '及格率', value: passRate, extra: '60 分及以上' }
+  ]
+})
+
+onMounted(refresh)
+watch(displayRows, async () => {
+  await nextTick()
+  renderCharts()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  disposeCharts()
+})
+
+async function refresh() {
+  loading.value = true
+  try {
+    const teacher = await getTeacherByUser(currentUser.id)
+    rows.value = await listStudentCourses({ teacherId: teacher.id })
+    taskId.value = taskOptions.value[0]?.value ?? ''
+    await nextTick()
+    renderCharts()
+    window.addEventListener('resize', handleResize)
+  } finally {
+    loading.value = false
+  }
+}
+
+function renderCharts() {
+  if (!barRef.value || !pieRef.value) {
+    return
+  }
+
+  barChart = echarts.getInstanceByDom(barRef.value) || echarts.init(barRef.value)
+  pieChart = echarts.getInstanceByDom(pieRef.value) || echarts.init(pieRef.value)
+
+  const bucketCounts = buildBucketCounts(displayRows.value)
+  barChart.setOption({
+    color: ['#2563eb'],
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 50, right: 20, top: 35, bottom: 45, containLabel: true },
+    xAxis: {
+      type: 'category',
+      name: '成绩区间',
+      axisLabel: { interval: 0, rotate: 15 },
+      data: ['未录入', '<60', '60-69', '70-79', '80-89', '90-100']
+    },
+    yAxis: {
+      type: 'value',
+      name: '人数'
+    },
+    series: [
+      {
+        type: 'bar',
+        barMaxWidth: 38,
+        data: [
+          bucketCounts['未录入'],
+          bucketCounts['<60'],
+          bucketCounts['60-69'],
+          bucketCounts['70-79'],
+          bucketCounts['80-89'],
+          bucketCounts['90-100']
+        ]
+      }
+    ]
+  })
+
+  pieChart.setOption({
+    color: ['#10b981', '#f59e0b'],
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0, left: 'center' },
+    series: [
+      {
+        type: 'pie',
+        radius: ['42%', '70%'],
+        center: ['50%', '42%'],
+        label: { formatter: '{b}\n{d}%' },
+        data: [
+          { name: '已录入', value: gradedRows.value.length },
+          { name: '未录入', value: pendingRows.value.length }
+        ]
+      }
+    ]
+  })
+}
+
+function buildBucketCounts(rowsList) {
+  const buckets = {
+    '未录入': 0,
+    '<60': 0,
+    '60-69': 0,
+    '70-79': 0,
+    '80-89': 0,
+    '90-100': 0
+  }
+
+  rowsList.forEach((row) => {
+    if (Number(row.gradeStatus) !== 1 || row.score === null || row.score === undefined) {
+      buckets['未录入'] += 1
+      return
+    }
+    const score = Number(row.score)
+    if (score >= 90) buckets['90-100'] += 1
+    else if (score >= 80) buckets['80-89'] += 1
+    else if (score >= 70) buckets['70-79'] += 1
+    else if (score >= 60) buckets['60-69'] += 1
+    else buckets['<60'] += 1
+  })
+
+  return buckets
+}
+
+function handleResize() {
+  barChart?.resize()
+  pieChart?.resize()
+}
+
+function disposeCharts() {
+  barChart?.dispose()
+  pieChart?.dispose()
+  barChart = null
+  pieChart = null
+}
 </script>
+
+<style scoped>
+.chart {
+  width: 100%;
+}
+
+.chart--wide {
+  min-height: 280px;
+}
+
+.chart--small {
+  min-height: 280px;
+}
+</style>
