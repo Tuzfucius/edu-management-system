@@ -32,7 +32,8 @@ INSERT INTO sys_user (id, username, password, role, status) VALUES
 INSERT INTO college (id, college_code, college_name, description, status) VALUES
 (1, 'CS', '计算机学院', '负责计算机类专业教学与科研', 1),
 (2, 'ME', '机械工程学院', '负责机械制造、智能制造和工程基础课程建设', 1),
-(3, 'SCI', '理学院', '负责物理、数学及公共基础课程建设', 1);
+(3, 'SCI', '理学院', '负责物理、数学及公共基础课程建设', 1),
+(4, 'IE', '信息工程学院', '负责信息工程、智能科学与技术专业建设', 1);
 
 INSERT INTO major (id, college_id, major_code, major_name, schooling_years, degree_type, status) VALUES
 (1, 1, 'CSSE', '软件工程', 4, '工学', 1),
@@ -40,7 +41,8 @@ INSERT INTO major (id, college_id, major_code, major_name, schooling_years, degr
 (3, 2, 'MEMFG', '机械设计制造及其自动化', 4, '工学', 1),
 (4, 2, 'MESMART', '智能制造工程', 4, '工学', 1),
 (5, 3, 'PHYAPP', '应用物理学', 4, '理学', 1),
-(6, 3, 'MATHAPP', '数学与应用数学', 4, '理学', 1);
+(6, 3, 'MATHAPP', '数学与应用数学', 4, '理学', 1),
+(7, 4, 'IST', '智能科学与技术', 4, '工学', 1);
 
 INSERT INTO department (id, college_id, department_code, department_name, office_location, status) VALUES
 (1, 1, 'D-CS-SW', '软件工程教研室', '信息楼 A301', 1),
@@ -49,7 +51,8 @@ INSERT INTO department (id, college_id, department_code, department_name, office
 (4, 2, 'D-ME-SMART', '智能制造教研室', '机械楼 C203', 1),
 (5, 3, 'D-SCI-MATH', '数学教研室', '理学楼 B201', 1),
 (6, 3, 'D-SCI-PHY', '物理教研室', '理学楼 B302', 1),
-(7, 3, 'D-SCI-PUB', '公共基础教研室', '理学楼 B105', 1);
+(7, 3, 'D-SCI-PUB', '公共基础教研室', '理学楼 B105', 1),
+(8, 4, 'D-IE-IST', '智能科学教研室', '信息楼 C301', 1);
 
 INSERT INTO class_info (id, major_id, class_code, class_name, entrance_year, status) VALUES
 (1, 1, 'SE2024-1', '软件工程2024级1班', 2024, 1),
@@ -58,7 +61,8 @@ INSERT INTO class_info (id, major_id, class_code, class_name, entrance_year, sta
 (4, 4, 'ME2024-2', '智能制造工程2024级1班', 2024, 1),
 (5, 5, 'PHY2024-1', '应用物理学2024级1班', 2024, 1),
 (6, 6, 'MATH2024-1', '数学与应用数学2024级1班', 2024, 1),
-(7, 3, 'ME2024-3', '机械设计制造及其自动化2024级2班', 2024, 1);
+(7, 3, 'ME2024-3', '机械设计制造及其自动化2024级2班', 2024, 1),
+(8, 7, 'IST2024-1', '智能科学与技术2024级1班', 2024, 1);
 
 INSERT INTO teacher (
     id, user_id, department_id, teacher_no, teacher_name, gender, title, phone, email, status
@@ -75,7 +79,7 @@ INSERT INTO teacher (
 INSERT INTO student (
     id, user_id, class_id, student_no, student_name, gender, birth_date, phone, email, enrollment_year, status
 ) VALUES
-(1, 4, 3, '20240001', '王小明', 'M', '2006-03-12', '13900000001', '20240001@example.edu', 2024, 1),
+(1, 4, 8, '20240001', '王小明', 'M', '2006-03-12', '13900000001', '20240001@example.edu', 2024, 1),
 (2, 5, 4, '20240002', '赵雨', 'F', '2006-07-21', '13900000002', '20240002@example.edu', 2024, 1),
 (3, 6, 1, '20240003', '陈晨', 'M', '2006-01-18', '13900000003', '20240003@example.edu', 2024, 1),
 (4, 8, 2, '20240004', '林悦', 'F', '2006-11-05', '13900000004', '20240004@example.edu', 2024, 1),
