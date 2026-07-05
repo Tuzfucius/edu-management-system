@@ -353,6 +353,12 @@ public class AcademicBusinessService {
         if (!List.of("ADMIN", "TEACHER", "STUDENT").contains(role)) {
             throw new RuntimeException("角色不合法");
         }
+        if (!isBlank(user.get("status"))) {
+            int status = intValue(user.get("status"));
+            if (status != 0 && status != 1) {
+                throw new RuntimeException("账号状态不合法");
+            }
+        }
     }
 
     private void validateStudent(Map<String, Object> student, Long id) {

@@ -39,7 +39,6 @@ public class AcademicBusinessDao {
                 SELECT id, username, role, status, last_login_at AS lastLoginAt,
                        created_at AS createdAt, updated_at AS updatedAt
                 FROM sys_user
-                WHERE status = 1
                 ORDER BY id DESC
                 """);
     }
@@ -49,15 +48,15 @@ public class AcademicBusinessDao {
                 SELECT id, username, role, status, last_login_at AS lastLoginAt,
                        created_at AS createdAt, updated_at AS updatedAt
                 FROM sys_user
-                WHERE id = ? AND status = 1
+                WHERE id = ?
                 """, id);
     }
 
     public int insertUser(Map<String, Object> user) {
         return jdbcTemplate.update("""
                 INSERT INTO sys_user(username, password, role, status)
-                VALUES (?, ?, ?, 1)
-                """, user.get("username"), user.get("password"), user.get("role"));
+                VALUES (?, ?, ?, COALESCE(?, 1))
+                """, user.get("username"), user.get("password"), user.get("role"), user.get("status"));
     }
 
     public int updateUser(Long id, Map<String, Object> user) {
@@ -65,15 +64,15 @@ public class AcademicBusinessDao {
         if (password == null || password.toString().isBlank()) {
             return jdbcTemplate.update("""
                     UPDATE sys_user
-                    SET username = ?, role = ?
-                    WHERE id = ? AND status = 1
-                    """, user.get("username"), user.get("role"), id);
+                    SET username = ?, role = ?, status = COALESCE(?, status)
+                    WHERE id = ?
+                    """, user.get("username"), user.get("role"), user.get("status"), id);
         }
         return jdbcTemplate.update("""
                 UPDATE sys_user
-                SET username = ?, password = ?, role = ?
-                WHERE id = ? AND status = 1
-                """, user.get("username"), password, user.get("role"), id);
+                SET username = ?, password = ?, role = ?, status = COALESCE(?, status)
+                WHERE id = ?
+                """, user.get("username"), password, user.get("role"), user.get("status"), id);
     }
 
     public int disableUser(Long id) {

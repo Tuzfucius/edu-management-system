@@ -2,7 +2,7 @@
   <div class="page">
     <div>
       <h1 class="page-title">人员管理</h1>
-      <div class="page-description">维护登录账号、学生档案、教师档案和导师指导关系。</div>
+      <div class="page-description">维护登录账号、学生档案、教师档案和指导关系。</div>
     </div>
 
     <el-tabs v-model="activeTab" class="management-tabs">
@@ -55,21 +55,37 @@
       <el-tab-pane label="账号" name="users">
         <el-card>
           <div class="toolbar">
-            <el-input v-model="userKeyword" placeholder="搜索用户名或角色" clearable style="width: 260px" />
+            <div class="toolbar-left">
+              <el-input v-model="userKeyword" placeholder="搜索用户名或角色" clearable style="width: 260px" />
+              <el-select v-model="userStatusFilter" clearable placeholder="账号状态" style="width: 140px">
+                <el-option label="启用" value="1" />
+                <el-option label="停用" value="0" />
+              </el-select>
+            </div>
             <el-button type="primary" @click="openUserDialog()">新增账号</el-button>
           </div>
           <el-table v-loading="loading" :data="filteredUsers" border empty-text="暂无账号数据">
-            <el-table-column prop="username" label="用户名" />
+            <el-table-column prop="username" label="用户名" min-width="160" />
             <el-table-column label="角色" width="130">
               <template #default="{ row }">
                 <el-tag effect="plain">{{ roleText(row.role) }}</el-tag>
               </template>
             </el-table-column>
+            <el-table-column label="状态" width="110">
+              <template #default="{ row }">
+                <el-tag :type="statusTagType(row.status)" effect="plain">
+                  {{ statusText(row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="lastLoginAt" label="最后登录" width="190" />
-            <el-table-column label="操作" width="150">
+            <el-table-column prop="createdAt" label="创建时间" width="190" />
+            <el-table-column label="操作" width="190">
               <template #default="{ row }">
                 <el-button link type="primary" @click="openUserDialog(row)">编辑</el-button>
-                <el-button link type="danger" @click="removeUserRow(row)">停用</el-button>
+                <el-button link :type="Number(row.status) === 1 ? 'danger' : 'success'" @click="toggleUserStatus(row)">
+                  {{ Number(row.status) === 1 ? '停用' : '启用' }}
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -103,14 +119,26 @@
 
     <el-dialog v-model="userDialog" :title="editingUser.id ? '编辑账号' : '新增账号'" width="480px">
       <el-form :model="editingUser" label-width="88px">
-        <el-form-item label="用户名"><el-input v-model="editingUser.username" /></el-form-item>
-        <el-form-item label="密码"><el-input v-model="editingUser.password" type="password" show-password placeholder="编辑时留空表示不修改" /></el-form-item>
+        <el-form-item label="用户名">
+          <el-input v-model="editingUser.username" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input
+            v-model="editingUser.password"
+            type="password"
+            show-password
+            placeholder="留空表示不修改"
+          />
+        </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="editingUser.role" style="width: 100%">
             <el-option label="管理员" value="ADMIN" />
             <el-option label="教师" value="TEACHER" />
             <el-option label="学生" value="STUDENT" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-switch v-model="editingUser.status" :active-value="1" :inactive-value="0" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -131,17 +159,27 @@
             <el-option v-for="item in classes" :key="item.id" :label="item.className" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="学号"><el-input v-model="editingStudent.studentNo" /></el-form-item>
-        <el-form-item label="姓名"><el-input v-model="editingStudent.studentName" /></el-form-item>
+        <el-form-item label="学号">
+          <el-input v-model="editingStudent.studentNo" />
+        </el-form-item>
+        <el-form-item label="姓名">
+          <el-input v-model="editingStudent.studentName" />
+        </el-form-item>
         <el-form-item label="性别">
           <el-radio-group v-model="editingStudent.gender">
             <el-radio-button label="M">男</el-radio-button>
             <el-radio-button label="F">女</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="入学年份"><el-input-number v-model="editingStudent.enrollmentYear" :min="2000" :max="2100" /></el-form-item>
-        <el-form-item label="联系方式"><el-input v-model="editingStudent.phone" /></el-form-item>
-        <el-form-item label="邮箱"><el-input v-model="editingStudent.email" /></el-form-item>
+        <el-form-item label="入学年份">
+          <el-input-number v-model="editingStudent.enrollmentYear" :min="2000" :max="2100" />
+        </el-form-item>
+        <el-form-item label="联系电话">
+          <el-input v-model="editingStudent.phone" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editingStudent.email" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="studentDialog = false">取消</el-button>
@@ -161,17 +199,27 @@
             <el-option v-for="item in departments" :key="item.id" :label="item.departmentName" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="工号"><el-input v-model="editingTeacher.teacherNo" /></el-form-item>
-        <el-form-item label="姓名"><el-input v-model="editingTeacher.teacherName" /></el-form-item>
-        <el-form-item label="职称"><el-input v-model="editingTeacher.title" /></el-form-item>
+        <el-form-item label="工号">
+          <el-input v-model="editingTeacher.teacherNo" />
+        </el-form-item>
+        <el-form-item label="姓名">
+          <el-input v-model="editingTeacher.teacherName" />
+        </el-form-item>
+        <el-form-item label="职称">
+          <el-input v-model="editingTeacher.title" />
+        </el-form-item>
         <el-form-item label="性别">
           <el-radio-group v-model="editingTeacher.gender">
             <el-radio-button label="M">男</el-radio-button>
             <el-radio-button label="F">女</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="联系方式"><el-input v-model="editingTeacher.phone" /></el-form-item>
-        <el-form-item label="邮箱"><el-input v-model="editingTeacher.email" /></el-form-item>
+        <el-form-item label="联系电话">
+          <el-input v-model="editingTeacher.phone" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editingTeacher.email" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="teacherDialog = false">取消</el-button>
@@ -191,9 +239,15 @@
             <el-option v-for="item in students" :key="item.id" :label="`${item.studentNo} ${item.studentName}`" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="指导类型"><el-input v-model="editingGuide.guideType" /></el-form-item>
-        <el-form-item label="开始日期"><el-date-picker v-model="editingGuide.startDate" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item>
-        <el-form-item label="结束日期"><el-date-picker v-model="editingGuide.endDate" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item>
+        <el-form-item label="指导类型">
+          <el-input v-model="editingGuide.guideType" />
+        </el-form-item>
+        <el-form-item label="开始日期">
+          <el-date-picker v-model="editingGuide.startDate" value-format="YYYY-MM-DD" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="结束日期">
+          <el-date-picker v-model="editingGuide.endDate" value-format="YYYY-MM-DD" style="width: 100%" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="guideDialog = false">取消</el-button>
@@ -210,7 +264,7 @@ import { listClassInfos } from '../../api/classInfo'
 import { listDepartments } from '../../api/department'
 import { createStudent, listStudents, removeStudent, updateStudent } from '../../api/student'
 import { createTeacher, listTeachers, removeTeacher, updateTeacher } from '../../api/teacher'
-import { createUser, listUsers, removeUser, updateUser } from '../../api/user'
+import { createUser, listUsers, updateUser } from '../../api/user'
 import { createTeacherStudent, listTeacherStudents, removeTeacherStudent, updateTeacherStudent } from '../../api/teacherStudent'
 import { filterRows as sharedFilterRows } from '../../utils/filter'
 
@@ -225,6 +279,7 @@ const departments = ref([])
 const studentKeyword = ref('')
 const teacherKeyword = ref('')
 const userKeyword = ref('')
+const userStatusFilter = ref('')
 const guideKeyword = ref('')
 const userDialog = ref(false)
 const studentDialog = ref(false)
@@ -235,15 +290,33 @@ const editingStudent = reactive({})
 const editingTeacher = reactive({})
 const editingGuide = reactive({})
 
-const studentUsers = computed(() => users.value.filter((item) => item.role === 'STUDENT'))
-const teacherUsers = computed(() => users.value.filter((item) => item.role === 'TEACHER'))
-const filteredStudents = computed(() => filterRows(students.value, studentKeyword.value, ['studentNo', 'studentName', 'className', 'majorName']))
-const filteredTeachers = computed(() => filterRows(teachers.value, teacherKeyword.value, ['teacherNo', 'teacherName', 'departmentName']))
-const filteredUsers = computed(() => filterRows(users.value, userKeyword.value, ['username', 'role']))
-const filteredGuides = computed(() => sharedFilterRows(guides.value, {
-  keyword: guideKeyword.value,
-  fields: ['teacherName', 'studentNo', 'studentName', 'guideType']
-}))
+const studentUsers = computed(() => users.value.filter((item) => item.role === 'STUDENT' && Number(item.status) === 1))
+const teacherUsers = computed(() => users.value.filter((item) => item.role === 'TEACHER' && Number(item.status) === 1))
+const filteredStudents = computed(() =>
+  sharedFilterRows(students.value, {
+    keyword: studentKeyword.value,
+    fields: ['studentNo', 'studentName', 'className', 'majorName']
+  })
+)
+const filteredTeachers = computed(() =>
+  sharedFilterRows(teachers.value, {
+    keyword: teacherKeyword.value,
+    fields: ['teacherNo', 'teacherName', 'departmentName']
+  })
+)
+const filteredUsers = computed(() =>
+  sharedFilterRows(users.value, {
+    keyword: userKeyword.value,
+    fields: ['username', 'role'],
+    predicates: [buildUserStatusPredicate]
+  })
+)
+const filteredGuides = computed(() =>
+  sharedFilterRows(guides.value, {
+    keyword: guideKeyword.value,
+    fields: ['teacherName', 'studentNo', 'studentName', 'guideType']
+  })
+)
 
 onMounted(refreshAll)
 
@@ -263,9 +336,8 @@ async function refreshAll() {
   }
 }
 
-function filterRows(rows, keyword, fields) {
-  if (!keyword) return rows
-  return rows.filter((row) => fields.some((field) => String(row[field] || '').includes(keyword)))
+function buildUserStatusPredicate(row) {
+  return !userStatusFilter.value || String(row.status) === String(userStatusFilter.value)
 }
 
 function reset(target, source) {
@@ -274,7 +346,7 @@ function reset(target, source) {
 }
 
 function openUserDialog(row = null) {
-  reset(editingUser, row ? { ...row, password: '' } : { username: '', password: '123456', role: 'STUDENT' })
+  reset(editingUser, row ? { ...row, password: '', status: Number(row.status) } : { username: '', password: '123456', role: 'STUDENT', status: 1 })
   userDialog.value = true
 }
 
@@ -294,7 +366,14 @@ function openGuideDialog(row = null) {
 }
 
 async function saveUser() {
-  editingUser.id ? await updateUser(editingUser.id, editingUser) : await createUser(editingUser)
+  const payload = {
+    ...editingUser,
+    status: Number(editingUser.status)
+  }
+  if (payload.password === '') {
+    delete payload.password
+  }
+  editingUser.id ? await updateUser(editingUser.id, payload) : await createUser(payload)
   userDialog.value = false
   ElMessage.success('账号已保存')
   await refreshAll()
@@ -321,35 +400,56 @@ async function saveGuide() {
   await refreshAll()
 }
 
-async function removeUserRow(row) {
-  await confirmRemove('确定停用该账号吗？')
-  await removeUser(row.id)
+async function toggleUserStatus(row) {
+  const nextStatus = Number(row.status) === 1 ? 0 : 1
+  await confirmRemove(nextStatus === 0 ? '确定停用该账号吗？' : '确定启用该账号吗？')
+  await updateUser(row.id, {
+    ...row,
+    status: nextStatus,
+    password: ''
+  })
+  ElMessage.success(nextStatus === 0 ? '账号已停用' : '账号已启用')
   await refreshAll()
 }
 
 async function removeStudentRow(row) {
   await confirmRemove('确定停用该学生档案吗？')
   await removeStudent(row.id)
+  ElMessage.success('学生已停用')
   await refreshAll()
 }
 
 async function removeTeacherRow(row) {
   await confirmRemove('确定停用该教师档案吗？')
   await removeTeacher(row.id)
+  ElMessage.success('教师已停用')
   await refreshAll()
 }
 
 async function removeGuideRow(row) {
   await confirmRemove('确定停用该指导关系吗？')
   await removeTeacherStudent(row.id)
+  ElMessage.success('指导关系已停用')
   await refreshAll()
 }
 
 function confirmRemove(message) {
-  return ElMessageBox.confirm(message, '操作确认', { type: 'warning', confirmButtonText: '停用', cancelButtonText: '取消' })
+  return ElMessageBox.confirm(message, '操作确认', {
+    type: 'warning',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消'
+  })
 }
 
 function roleText(role) {
   return { ADMIN: '管理员', TEACHER: '教师', STUDENT: '学生' }[role] || role
+}
+
+function statusText(status) {
+  return Number(status) === 1 ? '启用' : '停用'
+}
+
+function statusTagType(status) {
+  return Number(status) === 1 ? 'success' : 'danger'
 }
 </script>
