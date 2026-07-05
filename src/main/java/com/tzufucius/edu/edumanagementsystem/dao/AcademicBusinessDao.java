@@ -3,8 +3,13 @@ package com.tzufucius.edu.edumanagementsystem.dao;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
@@ -52,11 +57,22 @@ public class AcademicBusinessDao {
                 """, id);
     }
 
-    public int insertUser(Map<String, Object> user) {
-        return jdbcTemplate.update("""
-                INSERT INTO sys_user(username, password, role, status)
-                VALUES (?, ?, ?, COALESCE(?, 1))
-                """, user.get("username"), user.get("password"), user.get("role"), user.get("status"));
+    public Long insertUser(Map<String, Object> user) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        PreparedStatementCreator creator = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("""
+                    INSERT INTO sys_user(username, password, role, status)
+                    VALUES (?, ?, ?, COALESCE(?, 1))
+                    """, Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setObject(1, user.get("username"));
+            preparedStatement.setObject(2, user.get("password"));
+            preparedStatement.setObject(3, user.get("role"));
+            preparedStatement.setObject(4, user.get("status"));
+            return preparedStatement;
+        };
+        jdbcTemplate.update(creator, keyHolder);
+        Number generatedKey = keyHolder.getKey();
+        return generatedKey == null ? null : generatedKey.longValue();
     }
 
     public int updateUser(Long id, Map<String, Object> user) {

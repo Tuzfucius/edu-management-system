@@ -32,10 +32,10 @@ public class SysUserController {
     }
 
     @PostMapping
-    public Result<Void> create(@RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
-        service.createUser(body);
+    public Result<Long> create(@RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
+        Long userId = service.createUser(body);
         operationLogService.record(request, session, "账号管理", "INSERT", "sys_user", null, "新增账号：" + body.get("username"));
-        return Result.success(null);
+        return Result.success(userId);
     }
 
     @PutMapping("/{id}")

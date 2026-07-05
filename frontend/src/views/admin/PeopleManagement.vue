@@ -150,10 +150,27 @@
     <el-dialog v-model="studentDialog" :title="editingStudent.id ? '编辑学生' : '新增学生'" width="640px">
       <el-form :model="editingStudent" label-width="88px">
         <el-form-item label="绑定账号">
+          <el-radio-group v-model="studentAccountMode">
+            <el-radio-button label="existing">选择已有账号</el-radio-button>
+            <el-radio-button label="create">直接新建账号</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="studentAccountMode === 'existing'" label="账号选择">
           <el-select v-model="editingStudent.userId" filterable style="width: 100%">
-            <el-option v-for="user in studentUsers" :key="user.id" :label="user.username" :value="user.id" />
+            <el-option v-for="user in studentUserOptions" :key="user.id" :label="user.username" :value="user.id" />
           </el-select>
         </el-form-item>
+        <template v-else>
+          <el-form-item label="账号用户名">
+            <el-input v-model="studentAccountDraft.username" />
+          </el-form-item>
+          <el-form-item label="账号密码">
+            <el-input v-model="studentAccountDraft.password" type="password" show-password />
+          </el-form-item>
+          <el-form-item label="账号说明">
+            <el-tag effect="plain">将自动创建学生角色账号</el-tag>
+          </el-form-item>
+        </template>
         <el-form-item label="所属班级">
           <el-select v-model="editingStudent.classId" filterable style="width: 100%">
             <el-option v-for="item in classes" :key="item.id" :label="item.className" :value="item.id" />
@@ -190,10 +207,27 @@
     <el-dialog v-model="teacherDialog" :title="editingTeacher.id ? '编辑教师' : '新增教师'" width="640px">
       <el-form :model="editingTeacher" label-width="88px">
         <el-form-item label="绑定账号">
+          <el-radio-group v-model="teacherAccountMode">
+            <el-radio-button label="existing">选择已有账号</el-radio-button>
+            <el-radio-button label="create">直接新建账号</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="teacherAccountMode === 'existing'" label="账号选择">
           <el-select v-model="editingTeacher.userId" filterable style="width: 100%">
-            <el-option v-for="user in teacherUsers" :key="user.id" :label="user.username" :value="user.id" />
+            <el-option v-for="user in teacherUserOptions" :key="user.id" :label="user.username" :value="user.id" />
           </el-select>
         </el-form-item>
+        <template v-else>
+          <el-form-item label="账号用户名">
+            <el-input v-model="teacherAccountDraft.username" />
+          </el-form-item>
+          <el-form-item label="账号密码">
+            <el-input v-model="teacherAccountDraft.password" type="password" show-password />
+          </el-form-item>
+          <el-form-item label="账号说明">
+            <el-tag effect="plain">将自动创建教师角色账号</el-tag>
+          </el-form-item>
+        </template>
         <el-form-item label="教研室">
           <el-select v-model="editingTeacher.departmentId" filterable style="width: 100%">
             <el-option v-for="item in departments" :key="item.id" :label="item.departmentName" :value="item.id" />
@@ -285,13 +319,19 @@ const userDialog = ref(false)
 const studentDialog = ref(false)
 const teacherDialog = ref(false)
 const guideDialog = ref(false)
+const studentAccountMode = ref('create')
+const teacherAccountMode = ref('create')
+const studentAccountDraft = reactive({ username: '', password: '123456' })
+const teacherAccountDraft = reactive({ username: '', password: '123456' })
 const editingUser = reactive({})
 const editingStudent = reactive({})
 const editingTeacher = reactive({})
 const editingGuide = reactive({})
 
-const studentUsers = computed(() => users.value.filter((item) => item.role === 'STUDENT' && Number(item.status) === 1))
-const teacherUsers = computed(() => users.value.filter((item) => item.role === 'TEACHER' && Number(item.status) === 1))
+const boundStudentUserIds = computed(() => new Set(students.value.map((item) => Number(item.userId)).filter(isValidNumber)))
+const boundTeacherUserIds = computed(() => new Set(teachers.value.map((item) => Number(item.userId)).filter(isValidNumber)))
+const studentUserOptions = computed(() => buildAvailableUsers('STUDENT', boundStudentUserIds.value, editingStudent.userId))
+const teacherUserOptions = computed(() => buildAvailableUsers('TEACHER', boundTeacherUserIds.value, editingTeacher.userId))
 const filteredStudents = computed(() =>
   sharedFilterRows(students.value, {
     keyword: studentKeyword.value,
@@ -345,18 +385,57 @@ function reset(target, source) {
   Object.assign(target, source)
 }
 
+function isValidNumber(value) {
+  return Number.isFinite(value)
+}
+
+function buildAvailableUsers(role, boundIds, selectedUserId) {
+  const selectedId = Number(selectedUserId)
+  const availableUsers = users.value.filter((item) => {
+    const userId = Number(item.id)
+    return item.role === role && Number(item.status) === 1 && (!boundIds.has(userId) || userId === selectedId)
+  })
+  if (Number.isFinite(selectedId) && selectedId > 0 && !availableUsers.some((item) => Number(item.id) === selectedId)) {
+    const selectedUser = users.value.find((item) => Number(item.id) === selectedId)
+    if (selectedUser) {
+      availableUsers.unshift(selectedUser)
+    }
+  }
+  return availableUsers
+}
+
 function openUserDialog(row = null) {
   reset(editingUser, row ? { ...row, password: '', status: Number(row.status) } : { username: '', password: '123456', role: 'STUDENT', status: 1 })
   userDialog.value = true
 }
 
 function openStudentDialog(row = null) {
-  reset(editingStudent, row ? { ...row } : { gender: 'M', enrollmentYear: new Date().getFullYear() })
+  reset(
+    editingStudent,
+    row
+      ? { ...row }
+      : {
+          gender: 'M',
+          enrollmentYear: new Date().getFullYear()
+        }
+  )
+  studentAccountMode.value = row ? 'existing' : 'create'
+  reset(studentAccountDraft, { username: '', password: '123456' })
   studentDialog.value = true
 }
 
 function openTeacherDialog(row = null) {
-  reset(editingTeacher, row ? { ...row } : { gender: 'M', title: '讲师' })
+  reset(
+    editingTeacher,
+    row
+      ? { ...row }
+      : {
+          gender: 'M',
+          title: '讲师'
+        }
+  )
+  teacherAccountMode.value = row ? 'existing' : 'create'
+  reset(teacherAccountDraft, { username: '', password: '123456' })
   teacherDialog.value = true
 }
 
@@ -380,14 +459,22 @@ async function saveUser() {
 }
 
 async function saveStudent() {
-  editingStudent.id ? await updateStudent(editingStudent.id, editingStudent) : await createStudent(editingStudent)
+  const payload = buildPersonPayload(editingStudent, studentAccountMode.value, studentAccountDraft, 'STUDENT')
+  if (!payload) {
+    return
+  }
+  editingStudent.id ? await updateStudent(editingStudent.id, payload) : await createStudent(payload)
   studentDialog.value = false
   ElMessage.success('学生已保存')
   await refreshAll()
 }
 
 async function saveTeacher() {
-  editingTeacher.id ? await updateTeacher(editingTeacher.id, editingTeacher) : await createTeacher(editingTeacher)
+  const payload = buildPersonPayload(editingTeacher, teacherAccountMode.value, teacherAccountDraft, 'TEACHER')
+  if (!payload) {
+    return
+  }
+  editingTeacher.id ? await updateTeacher(editingTeacher.id, payload) : await createTeacher(payload)
   teacherDialog.value = false
   ElMessage.success('教师已保存')
   await refreshAll()
@@ -451,5 +538,31 @@ function statusText(status) {
 
 function statusTagType(status) {
   return Number(status) === 1 ? 'success' : 'danger'
+}
+
+function buildPersonPayload(base, accountMode, accountDraft, role) {
+  const payload = { ...base }
+  if (accountMode === 'create') {
+    const username = accountDraft.username.trim()
+    const password = accountDraft.password
+    if (!username || !password) {
+      ElMessage.warning('请填写账号用户名和密码')
+      return null
+    }
+    payload.account = {
+      username,
+      password,
+      role,
+      status: 1
+    }
+    delete payload.userId
+  } else {
+    if (!payload.userId) {
+      ElMessage.warning('请选择绑定账号')
+      return null
+    }
+    delete payload.account
+  }
+  return payload
 }
 </script>

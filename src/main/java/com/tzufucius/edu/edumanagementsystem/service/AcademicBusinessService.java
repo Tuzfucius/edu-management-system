@@ -65,14 +65,16 @@ public class AcademicBusinessService {
         return user;
     }
 
-    public void createUser(Map<String, Object> user) {
+    public Long createUser(Map<String, Object> user) {
         validateUser(user, null);
         if (dao.countUsername(text(user.get("username")), null) > 0) {
             throw new RuntimeException("用户名已存在");
         }
-        if (dao.insertUser(user) != 1) {
+        Long userId = dao.insertUser(user);
+        if (userId == null) {
             throw new RuntimeException("新增用户失败");
         }
+        return userId;
     }
 
     public void updateUser(Long id, Map<String, Object> user) {
@@ -114,7 +116,10 @@ public class AcademicBusinessService {
         return student;
     }
 
+    @Transactional
     public void createStudent(Map<String, Object> student) {
+        Long userId = resolveUserId(student, "STUDENT");
+        student.put("userId", userId);
         validateStudent(student, null);
         if (dao.countStudentNo(text(student.get("studentNo")), null) > 0) {
             throw new RuntimeException("学号已存在");
@@ -124,8 +129,11 @@ public class AcademicBusinessService {
         }
     }
 
+    @Transactional
     public void updateStudent(Long id, Map<String, Object> student) {
         getStudent(id);
+        Long userId = resolveUserId(student, "STUDENT");
+        student.put("userId", userId);
         validateStudent(student, id);
         if (dao.countStudentNo(text(student.get("studentNo")), id) > 0) {
             throw new RuntimeException("学号已存在");
@@ -162,7 +170,10 @@ public class AcademicBusinessService {
         return teacher;
     }
 
+    @Transactional
     public void createTeacher(Map<String, Object> teacher) {
+        Long userId = resolveUserId(teacher, "TEACHER");
+        teacher.put("userId", userId);
         validateTeacher(teacher, null);
         if (dao.countTeacherNo(text(teacher.get("teacherNo")), null) > 0) {
             throw new RuntimeException("工号已存在");
@@ -172,8 +183,11 @@ public class AcademicBusinessService {
         }
     }
 
+    @Transactional
     public void updateTeacher(Long id, Map<String, Object> teacher) {
         getTeacher(id);
+        Long userId = resolveUserId(teacher, "TEACHER");
+        teacher.put("userId", userId);
         validateTeacher(teacher, id);
         if (dao.countTeacherNo(text(teacher.get("teacherNo")), id) > 0) {
             throw new RuntimeException("工号已存在");
@@ -437,6 +451,30 @@ public class AcademicBusinessService {
 
     private String text(Object value) {
         return value == null ? null : value.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> mapValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return null;
+    }
+
+    private Long resolveUserId(Map<String, Object> entity, String role) {
+        Long userId = longValue(entity.get("userId"));
+        if (userId != null) {
+            return requiredId(userId, "鐢ㄦ埛ID涓嶈兘涓虹┖");
+        }
+        Map<String, Object> account = mapValue(entity.get("account"));
+        if (account == null) {
+            throw new RuntimeException("鐢ㄦ埛ID涓嶈兘涓虹┖");
+        }
+        account.put("role", role);
+        if (isBlank(account.get("status"))) {
+            account.put("status", 1);
+        }
+        return createUser(account);
     }
 
     private Long longValue(Object value) {
