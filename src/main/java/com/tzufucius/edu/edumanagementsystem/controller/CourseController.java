@@ -7,7 +7,6 @@ import com.tzufucius.edu.edumanagementsystem.service.CourseService;
 import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,23 +24,23 @@ public class CourseController {
 
     @GetMapping
     public Result<List<CourseVO>> list() {
-        return Result.success(courseService.findAll());
+        return Result.success(courseService.findAllVO());
     }
 
     @GetMapping("/{id}")
     public Result<CourseVO> get(@PathVariable Long id) {
-        return Result.success(courseService.findById(id));
+        return Result.success(courseService.findByIdVO(id));
     }
 
     @PostMapping
-    public Result<Void> create(@Valid @RequestBody CourseRequest body, HttpSession session, HttpServletRequest request) {
+    public Result<Void> create(@RequestBody CourseRequest body, HttpSession session, HttpServletRequest request) {
         courseService.addCourse(body);
         operationLogService.record(request, session, "课程管理", "INSERT", "course", null, "新增课程：" + body.courseName());
         return Result.success(null);
     }
 
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody CourseRequest body, HttpSession session,
+    public Result<Void> update(@PathVariable Long id, @RequestBody CourseRequest body, HttpSession session,
                                HttpServletRequest request) {
         courseService.updateCourse(id, body);
         operationLogService.record(request, session, "课程管理", "UPDATE", "course", id, "修改课程：" + body.courseName());

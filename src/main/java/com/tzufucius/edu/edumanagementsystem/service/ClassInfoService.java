@@ -17,16 +17,28 @@ public class ClassInfoService {
         this.classInfoDao = classInfoDao;
     }
 
-    public List<ClassInfoVO> findAll() {
-        return classInfoDao.findAll().stream().map(BasicMapper::toVO).toList();
+    public List<ClassInfo> findAll() {
+        return classInfoDao.findAll();
     }
 
-    public ClassInfoVO findById(Long id) {
-        return BasicMapper.toVO(requireClassInfo(id, "班级不存在"));
+    public List<ClassInfoVO> findAllVO() {
+        return findAll().stream().map(BasicMapper::toVO).toList();
+    }
+
+    public ClassInfo findById(Long id) {
+        return requireClassInfo(id, "班级不存在");
+    }
+
+    public ClassInfoVO findByIdVO(Long id) {
+        return BasicMapper.toVO(findById(id));
     }
 
     public void addClassInfo(ClassInfoRequest request) {
-        ClassInfo classInfo = BasicMapper.toEntity(request);
+        addClassInfo(BasicMapper.toEntity(request));
+    }
+
+    public void addClassInfo(ClassInfo classInfo) {
+        checkRequiredFields(classInfo);
         checkMajorExists(classInfo.getMajorId());
         if (classInfoDao.countByClassCode(classInfo.getClassCode()) > 0) {
             throw new RuntimeException("班级编号已存在");
@@ -37,9 +49,15 @@ public class ClassInfoService {
     }
 
     public void updateClassInfo(Long id, ClassInfoRequest request) {
-        requireClassInfo(id, "班级不存在，无法修改");
         ClassInfo classInfo = BasicMapper.toEntity(request);
         classInfo.setId(id);
+        updateClassInfo(classInfo);
+    }
+
+    public void updateClassInfo(ClassInfo classInfo) {
+        Long id = classInfo.getId();
+        checkRequiredFields(classInfo);
+        requireClassInfo(id, "班级不存在，无法修改");
         checkMajorExists(classInfo.getMajorId());
         if (classInfoDao.countByClassCodeExcludeId(classInfo.getClassCode(), id) > 0) {
             throw new RuntimeException("班级编号已存在");
@@ -71,8 +89,23 @@ public class ClassInfoService {
     }
 
     private void checkMajorExists(Long majorId) {
+        if (majorId == null) {
+            throw new RuntimeException("所属专业不能为空");
+        }
         if (classInfoDao.countMajorById(majorId) == 0) {
             throw new RuntimeException("所属专业不存在");
+        }
+    }
+
+    private void checkRequiredFields(ClassInfo classInfo) {
+        if (classInfo == null) {
+            throw new RuntimeException("班级信息不能为空");
+        }
+        if (classInfo.getClassCode() == null || classInfo.getClassCode().isBlank()) {
+            throw new RuntimeException("班级编号不能为空");
+        }
+        if (classInfo.getClassName() == null || classInfo.getClassName().isBlank()) {
+            throw new RuntimeException("班级名称不能为空");
         }
     }
 }

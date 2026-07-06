@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
     public Result<Void> handleValidationException(Exception exception, HttpServletRequest request) {
         log.warn("参数校验失败 requestId={} uri={} message={}", requestId(), request.getRequestURI(), exception.getMessage());
-        return Result.badRequest("请求参数校验失败");
+        return Result.error("请求参数校验失败");
     }
 
     @ExceptionHandler(DataAccessException.class)

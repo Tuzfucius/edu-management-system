@@ -1,6 +1,6 @@
 package com.tzufucius.edu.edumanagementsystem.config;
 
-import com.tzufucius.edu.edumanagementsystem.dto.LoginUserVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.LoginUserVO;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

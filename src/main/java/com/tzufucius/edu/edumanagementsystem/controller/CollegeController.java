@@ -4,7 +4,6 @@ import com.tzufucius.edu.edumanagementsystem.common.Result;
 import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.CollegeRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.CollegeVO;
 import com.tzufucius.edu.edumanagementsystem.service.CollegeService;
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,22 +19,22 @@ public class CollegeController {
 
     @GetMapping
     public Result<List<CollegeVO>> list() {
-        return Result.success(collegeService.findAll());
+        return Result.success(collegeService.findAllVO());
     }
 
     @GetMapping("/{id}")
     public Result<CollegeVO> get(@PathVariable Long id) {
-        return Result.success(collegeService.findById(id));
+        return Result.success(collegeService.findByIdVO(id));
     }
 
     @PostMapping
-    public Result<Void> create(@Valid @RequestBody CollegeRequest request) {
+    public Result<Void> create(@RequestBody CollegeRequest request) {
         collegeService.addCollege(request);
         return Result.success(null);
     }
 
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody CollegeRequest request) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody CollegeRequest request) {
         collegeService.updateCollege(id, request);
         return Result.success(null);
     }

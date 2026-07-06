@@ -17,16 +17,28 @@ public class DepartmentService {
         this.departmentDao = departmentDao;
     }
 
-    public List<DepartmentVO> findAll() {
-        return departmentDao.findAll().stream().map(BasicMapper::toVO).toList();
+    public List<Department> findAll() {
+        return departmentDao.findAll();
     }
 
-    public DepartmentVO findById(Long id) {
-        return BasicMapper.toVO(requireDepartment(id, "教研室不存在"));
+    public List<DepartmentVO> findAllVO() {
+        return findAll().stream().map(BasicMapper::toVO).toList();
+    }
+
+    public Department findById(Long id) {
+        return requireDepartment(id, "教研室不存在");
+    }
+
+    public DepartmentVO findByIdVO(Long id) {
+        return BasicMapper.toVO(findById(id));
     }
 
     public void addDepartment(DepartmentRequest request) {
-        Department department = BasicMapper.toEntity(request);
+        addDepartment(BasicMapper.toEntity(request));
+    }
+
+    public void addDepartment(Department department) {
+        checkRequiredFields(department);
         checkCollegeExists(department.getCollegeId());
         if (departmentDao.countByDepartmentCode(department.getDepartmentCode()) > 0) {
             throw new RuntimeException("教研室编号已存在");
@@ -37,9 +49,15 @@ public class DepartmentService {
     }
 
     public void updateDepartment(Long id, DepartmentRequest request) {
-        requireDepartment(id, "教研室不存在，无法修改");
         Department department = BasicMapper.toEntity(request);
         department.setId(id);
+        updateDepartment(department);
+    }
+
+    public void updateDepartment(Department department) {
+        Long id = department.getId();
+        checkRequiredFields(department);
+        requireDepartment(id, "教研室不存在，无法修改");
         checkCollegeExists(department.getCollegeId());
         if (departmentDao.countByDepartmentCodeExcludeId(department.getDepartmentCode(), id) > 0) {
             throw new RuntimeException("教研室编号已存在");
@@ -71,8 +89,23 @@ public class DepartmentService {
     }
 
     private void checkCollegeExists(Long collegeId) {
+        if (collegeId == null) {
+            throw new RuntimeException("所属学院不能为空");
+        }
         if (departmentDao.countCollegeById(collegeId) == 0) {
             throw new RuntimeException("所属学院不存在");
+        }
+    }
+
+    private void checkRequiredFields(Department department) {
+        if (department == null) {
+            throw new RuntimeException("教研室信息不能为空");
+        }
+        if (department.getDepartmentCode() == null || department.getDepartmentCode().isBlank()) {
+            throw new RuntimeException("教研室编号不能为空");
+        }
+        if (department.getDepartmentName() == null || department.getDepartmentName().isBlank()) {
+            throw new RuntimeException("教研室名称不能为空");
         }
     }
 }

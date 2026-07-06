@@ -17,16 +17,28 @@ public class CollegeService {
         this.collegeDao = collegeDao;
     }
 
-    public List<CollegeVO> findAll() {
-        return collegeDao.findAll().stream().map(BasicMapper::toVO).toList();
+    public List<College> findAll() {
+        return collegeDao.findAll();
     }
 
-    public CollegeVO findById(Long id) {
-        return BasicMapper.toVO(requireCollege(id, "学院不存在"));
+    public List<CollegeVO> findAllVO() {
+        return findAll().stream().map(BasicMapper::toVO).toList();
+    }
+
+    public College findById(Long id) {
+        return requireCollege(id, "学院不存在");
+    }
+
+    public CollegeVO findByIdVO(Long id) {
+        return BasicMapper.toVO(findById(id));
     }
 
     public void addCollege(CollegeRequest request) {
-        College college = BasicMapper.toEntity(request);
+        addCollege(BasicMapper.toEntity(request));
+    }
+
+    public void addCollege(College college) {
+        checkRequiredFields(college);
         if (collegeDao.countByCollegeCode(college.getCollegeCode()) > 0) {
             throw new RuntimeException("学院编号已存在");
         }
@@ -36,9 +48,15 @@ public class CollegeService {
     }
 
     public void updateCollege(Long id, CollegeRequest request) {
-        requireCollege(id, "学院不存在，无法修改");
         College college = BasicMapper.toEntity(request);
         college.setId(id);
+        updateCollege(college);
+    }
+
+    public void updateCollege(College college) {
+        Long id = college.getId();
+        checkRequiredFields(college);
+        requireCollege(id, "学院不存在，无法修改");
         if (collegeDao.countByCollegeCodeExcludeId(college.getCollegeCode(), id) > 0) {
             throw new RuntimeException("学院编号已存在");
         }
@@ -66,5 +84,17 @@ public class CollegeService {
             throw new RuntimeException(message);
         }
         return college;
+    }
+
+    private void checkRequiredFields(College college) {
+        if (college == null) {
+            throw new RuntimeException("学院信息不能为空");
+        }
+        if (college.getCollegeCode() == null || college.getCollegeCode().isBlank()) {
+            throw new RuntimeException("学院编号不能为空");
+        }
+        if (college.getCollegeName() == null || college.getCollegeName().isBlank()) {
+            throw new RuntimeException("学院名称不能为空");
+        }
     }
 }

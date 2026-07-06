@@ -17,16 +17,28 @@ public class CourseService {
         this.courseDao = courseDao;
     }
 
-    public List<CourseVO> findAll() {
-        return courseDao.findAll().stream().map(BasicMapper::toVO).toList();
+    public List<Course> findAll() {
+        return courseDao.findAll();
     }
 
-    public CourseVO findById(Long id) {
-        return BasicMapper.toVO(requireCourse(id, "课程不存在"));
+    public List<CourseVO> findAllVO() {
+        return findAll().stream().map(BasicMapper::toVO).toList();
+    }
+
+    public Course findById(Long id) {
+        return requireCourse(id, "课程不存在");
+    }
+
+    public CourseVO findByIdVO(Long id) {
+        return BasicMapper.toVO(findById(id));
     }
 
     public void addCourse(CourseRequest request) {
-        Course course = BasicMapper.toEntity(request);
+        addCourse(BasicMapper.toEntity(request));
+    }
+
+    public void addCourse(Course course) {
+        checkRequiredFields(course);
         if (courseDao.countByCourseCode(course.getCourseCode()) > 0) {
             throw new RuntimeException("课程编号已存在");
         }
@@ -36,9 +48,15 @@ public class CourseService {
     }
 
     public void updateCourse(Long id, CourseRequest request) {
-        requireCourse(id, "课程不存在，无法修改");
         Course course = BasicMapper.toEntity(request);
         course.setId(id);
+        updateCourse(course);
+    }
+
+    public void updateCourse(Course course) {
+        Long id = course.getId();
+        checkRequiredFields(course);
+        requireCourse(id, "课程不存在，无法修改");
         if (courseDao.countByCourseCodeExcludeId(course.getCourseCode(), id) > 0) {
             throw new RuntimeException("课程编号已存在");
         }
@@ -66,5 +84,20 @@ public class CourseService {
             throw new RuntimeException(message);
         }
         return course;
+    }
+
+    private void checkRequiredFields(Course course) {
+        if (course == null) {
+            throw new RuntimeException("课程信息不能为空");
+        }
+        if (course.getCourseCode() == null || course.getCourseCode().isBlank()) {
+            throw new RuntimeException("课程编号不能为空");
+        }
+        if (course.getCourseName() == null || course.getCourseName().isBlank()) {
+            throw new RuntimeException("课程名称不能为空");
+        }
+        if (course.getCredit() == null || course.getCredit().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("课程学分必须大于0");
+        }
     }
 }
