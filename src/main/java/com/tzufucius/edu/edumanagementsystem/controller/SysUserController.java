@@ -1,14 +1,16 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.SysUserRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.SysUserVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
 import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -22,26 +24,27 @@ public class SysUserController {
     }
 
     @GetMapping
-    public Result<List<Map<String, Object>>> list() {
+    public Result<List<SysUserVO>> list() {
         return Result.success(service.listUsers());
     }
 
     @GetMapping("/{id}")
-    public Result<Map<String, Object>> get(@PathVariable Long id) {
+    public Result<SysUserVO> get(@PathVariable Long id) {
         return Result.success(service.getUser(id));
     }
 
     @PostMapping
-    public Result<Long> create(@RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
+    public Result<Long> create(@Valid @RequestBody SysUserRequest body, HttpSession session, HttpServletRequest request) {
         Long userId = service.createUser(body);
-        operationLogService.record(request, session, "账号管理", "INSERT", "sys_user", null, "新增账号：" + body.get("username"));
+        operationLogService.record(request, session, "账号管理", "INSERT", "sys_user", null, "新增账号：" + body.username());
         return Result.success(userId);
     }
 
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody SysUserRequest body, HttpSession session,
+                               HttpServletRequest request) {
         service.updateUser(id, body);
-        operationLogService.record(request, session, "账号管理", "UPDATE", "sys_user", id, "修改账号：" + body.get("username"));
+        operationLogService.record(request, session, "账号管理", "UPDATE", "sys_user", id, "修改账号：" + body.username());
         return Result.success(null);
     }
 

@@ -1,11 +1,13 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.TeachingTaskRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.TeachingTaskVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/teaching-tasks")
@@ -17,23 +19,23 @@ public class TeachingTaskController {
     }
 
     @GetMapping
-    public Result<List<Map<String, Object>>> list(@RequestParam(required = false) Long teacherId) {
+    public Result<List<TeachingTaskVO>> list(@RequestParam(required = false) Long teacherId) {
         return Result.success(service.listTeachingTasks(teacherId));
     }
 
     @GetMapping("/{id}")
-    public Result<Map<String, Object>> get(@PathVariable Long id) {
+    public Result<TeachingTaskVO> get(@PathVariable Long id) {
         return Result.success(service.getTeachingTask(id));
     }
 
     @PostMapping
-    public Result<Void> create(@RequestBody Map<String, Object> body) {
+    public Result<Void> create(@Valid @RequestBody TeachingTaskRequest body) {
         service.createTeachingTask(body);
         return Result.success(null);
     }
 
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody TeachingTaskRequest body) {
         service.updateTeachingTask(id, body);
         return Result.success(null);
     }

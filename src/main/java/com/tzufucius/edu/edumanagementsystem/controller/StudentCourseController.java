@@ -1,14 +1,18 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.ScoreUpdateRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.StudentCourseSelectRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.SelectableTaskVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.StudentCourseVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
 import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/student-courses")
@@ -22,20 +26,19 @@ public class StudentCourseController {
     }
 
     @GetMapping
-    public Result<List<Map<String, Object>>> list(
-            @RequestParam(required = false) Long studentId,
-            @RequestParam(required = false) Long teacherId
-    ) {
+    public Result<List<StudentCourseVO>> list(@RequestParam(required = false) Long studentId,
+                                              @RequestParam(required = false) Long teacherId) {
         return Result.success(service.listStudentCourses(studentId, teacherId));
     }
 
     @GetMapping("/selectable")
-    public Result<List<Map<String, Object>>> selectable(@RequestParam Long studentId, @RequestParam String semester) {
+    public Result<List<SelectableTaskVO>> selectable(@RequestParam Long studentId, @RequestParam String semester) {
         return Result.success(service.listSelectableTasks(studentId, semester));
     }
 
     @PostMapping
-    public Result<Void> select(@RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
+    public Result<Void> select(@Valid @RequestBody StudentCourseSelectRequest body, HttpSession session,
+                               HttpServletRequest request) {
         Long studentCourseId = service.selectCourse(body);
         operationLogService.record(request, session, "选课管理", "SELECT_COURSE", "student_course", studentCourseId, "学生选课");
         return Result.success(null);
@@ -49,7 +52,8 @@ public class StudentCourseController {
     }
 
     @PutMapping("/{id}/score")
-    public Result<Void> updateScore(@PathVariable Long id, @RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
+    public Result<Void> updateScore(@PathVariable Long id, @Valid @RequestBody ScoreUpdateRequest body,
+                                    HttpSession session, HttpServletRequest request) {
         service.updateScore(id, body);
         operationLogService.record(request, session, "成绩管理", "UPDATE_SCORE", "student_course", id, "成绩录入或修改");
         return Result.success(null);

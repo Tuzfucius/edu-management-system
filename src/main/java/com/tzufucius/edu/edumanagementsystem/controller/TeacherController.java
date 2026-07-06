@@ -1,14 +1,16 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.TeacherRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.TeacherVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
 import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/teachers")
@@ -22,31 +24,32 @@ public class TeacherController {
     }
 
     @GetMapping
-    public Result<List<Map<String, Object>>> list() {
+    public Result<List<TeacherVO>> list() {
         return Result.success(service.listTeachers());
     }
 
     @GetMapping("/{id}")
-    public Result<Map<String, Object>> get(@PathVariable Long id) {
+    public Result<TeacherVO> get(@PathVariable Long id) {
         return Result.success(service.getTeacher(id));
     }
 
     @GetMapping("/by-user/{userId}")
-    public Result<Map<String, Object>> getByUser(@PathVariable Long userId) {
+    public Result<TeacherVO> getByUser(@PathVariable Long userId) {
         return Result.success(service.getTeacherByUserId(userId));
     }
 
     @PostMapping
-    public Result<Void> create(@RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
+    public Result<Void> create(@Valid @RequestBody TeacherRequest body, HttpSession session, HttpServletRequest request) {
         service.createTeacher(body);
-        operationLogService.record(request, session, "教师管理", "INSERT", "teacher", null, "新增教师：" + body.get("teacherName"));
+        operationLogService.record(request, session, "教师管理", "INSERT", "teacher", null, "新增教师：" + body.teacherName());
         return Result.success(null);
     }
 
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body, HttpSession session, HttpServletRequest request) {
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody TeacherRequest body, HttpSession session,
+                               HttpServletRequest request) {
         service.updateTeacher(id, body);
-        operationLogService.record(request, session, "教师管理", "UPDATE", "teacher", id, "修改教师：" + body.get("teacherName"));
+        operationLogService.record(request, session, "教师管理", "UPDATE", "teacher", id, "修改教师：" + body.teacherName());
         return Result.success(null);
     }
 
