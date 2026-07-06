@@ -2,15 +2,15 @@ package com.tzufucius.edu.edumanagementsystem.service;
 
 import com.tzufucius.edu.edumanagementsystem.common.PageResult;
 import com.tzufucius.edu.edumanagementsystem.dao.OperationLogDao;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.OperationLogVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.LoginUserVO;
+import com.tzufucius.edu.edumanagementsystem.mapper.AcademicMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 @Service
 public class OperationLogService {
@@ -38,11 +38,13 @@ public class OperationLogService {
         }
     }
 
-    public PageResult<Map<String, Object>> page(String moduleName, String operationType, Long userId,
-                                                String startTime, String endTime, Integer page, Integer size) {
+    public PageResult<OperationLogVO> page(String moduleName, String operationType, Long userId,
+                                           String startTime, String endTime, Integer page, Integer size) {
         int safePage = page == null || page < 1 ? 1 : page;
         int safeSize = size == null || size < 1 ? 10 : Math.min(size, 100);
-        return operationLogDao.page(moduleName, operationType, userId, startTime, endTime, safePage, safeSize);
+        PageResult<java.util.Map<String, Object>> result = operationLogDao.page(moduleName, operationType, userId, startTime, endTime, safePage, safeSize);
+        return PageResult.of(result.getRecords().stream().map(AcademicMapper::toOperationLogVO).toList(),
+                result.getTotal(), result.getPage(), result.getSize());
     }
 
     private Long currentUserId(HttpSession session) {
