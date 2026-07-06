@@ -65,7 +65,6 @@ public class CourseDao {
                 SELECT id, course_code, course_name, credit, total_hours, course_type, exam_type,
                        status, created_at, updated_at
                 FROM course
-                WHERE status = 1
                 ORDER BY id DESC
                 """;
         return jdbcTemplate.query(sql, this::mapRow);
@@ -82,7 +81,7 @@ public class CourseDao {
                 SELECT id, course_code, course_name, credit, total_hours, course_type, exam_type,
                        status, created_at, updated_at
                 FROM course
-                WHERE id = ? AND status = 1
+                WHERE id = ?
                 """;
 
         List<Course> courses = jdbcTemplate.query(sql, this::mapRow, id);
@@ -127,7 +126,7 @@ public class CourseDao {
         String sql = """
                 UPDATE course
                 SET course_code = ?, course_name = ?, credit = ?, total_hours = ?, course_type = ?, exam_type = ?
-                WHERE id = ? AND status = 1
+                WHERE id = ?
                 """;
 
         return jdbcTemplate.update(
@@ -156,6 +155,14 @@ public class CourseDao {
                 """;
 
         return jdbcTemplate.update(sql, id);
+    }
+
+    public int enableById(Long id) {
+        return jdbcTemplate.update("UPDATE course SET status = 1 WHERE id = ?", id);
+    }
+
+    public int deleteById(Long id) {
+        return jdbcTemplate.update("DELETE FROM course WHERE id = ?", id);
     }
 
     /**
@@ -210,6 +217,25 @@ public class CourseDao {
 
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, courseId);
 
+        return count == null ? 0 : count;
+    }
+
+    public int countTeachingTaskByCourseIdAndSemester(Long courseId, String semester) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM teaching_task
+                WHERE course_id = ? AND semester = ? AND task_status <> 0
+                """, Integer.class, courseId, semester);
+        return count == null ? 0 : count;
+    }
+
+    public int countStudentCourseByCourseId(Long courseId) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM student_course sc
+                JOIN teaching_task tt ON tt.id = sc.teaching_task_id
+                WHERE tt.course_id = ?
+                """, Integer.class, courseId);
         return count == null ? 0 : count;
     }
 }

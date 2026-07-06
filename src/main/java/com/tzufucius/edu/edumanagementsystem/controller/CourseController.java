@@ -50,7 +50,21 @@ public class CourseController {
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
         courseService.deleteCourse(id);
+        operationLogService.record(request, session, "课程管理", "DELETE", "course", id, "删除课程");
+        return Result.success(null);
+    }
+
+    @PatchMapping("/{id}/disable")
+    public Result<Void> disable(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
+        courseService.disableCourse(id);
         operationLogService.record(request, session, "课程管理", "DISABLE", "course", id, "停用课程");
+        return Result.success(null);
+    }
+
+    @PatchMapping("/{id}/enable")
+    public Result<Void> enable(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
+        courseService.enableCourse(id);
+        operationLogService.record(request, session, "课程管理", "ENABLE", "course", id, "启用课程");
         return Result.success(null);
     }
 }

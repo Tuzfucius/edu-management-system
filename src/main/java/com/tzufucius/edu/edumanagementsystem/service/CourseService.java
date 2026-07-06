@@ -1,5 +1,6 @@
 package com.tzufucius.edu.edumanagementsystem.service;
 
+import com.tzufucius.edu.edumanagementsystem.common.SemesterUtils;
 import com.tzufucius.edu.edumanagementsystem.dao.CourseDao;
 import com.tzufucius.edu.edumanagementsystem.dto.request.CourseRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.CourseVO;
@@ -19,11 +20,15 @@ public class CourseService {
     }
 
     public List<CourseVO> findAll() {
-        return courseDao.findAll().stream().map(BasicMapper::toVO).toList();
+        String semester = SemesterUtils.currentSemester();
+        return courseDao.findAll().stream()
+                .map(course -> BasicMapper.toVO(course, courseDao.countTeachingTaskByCourseIdAndSemester(course.getId(), semester)))
+                .toList();
     }
 
     public CourseVO findById(Long id) {
-        return BasicMapper.toVO(requireCourse(id));
+        Course course = requireCourse(id);
+        return BasicMapper.toVO(course, courseDao.countTeachingTaskByCourseIdAndSemester(course.getId(), SemesterUtils.currentSemester()));
     }
 
     public void addCourse(CourseRequest request) {
@@ -51,11 +56,32 @@ public class CourseService {
     }
 
     public void deleteCourse(Long id) {
+        hardDeleteCourse(id);
+    }
+
+    public void disableCourse(Long id) {
         requireCourse(id);
-        if (courseDao.countTeachingTaskByCourseId(id) > 0) {
-            throw new RuntimeException("Course still has teaching tasks");
+        if (courseDao.countTeachingTaskByCourseIdAndSemester(id, SemesterUtils.currentSemester()) > 0) {
+            throw new RuntimeException("Course has teaching tasks in current semester");
         }
         if (courseDao.disableById(id) != 1) {
+            throw new RuntimeException("Failed to disable course");
+        }
+    }
+
+    public void enableCourse(Long id) {
+        requireCourse(id);
+        if (courseDao.enableById(id) != 1) {
+            throw new RuntimeException("Failed to enable course");
+        }
+    }
+
+    public void hardDeleteCourse(Long id) {
+        requireCourse(id);
+        if (courseDao.countTeachingTaskByCourseId(id) > 0 || courseDao.countStudentCourseByCourseId(id) > 0) {
+            throw new RuntimeException("Course has historical teaching or selection records and cannot be deleted");
+        }
+        if (courseDao.deleteById(id) != 1) {
             throw new RuntimeException("Failed to delete course");
         }
     }

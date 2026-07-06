@@ -5,5 +5,6 @@ import java.time.LocalDateTime;
 
 public record CourseVO(Long id, String courseCode, String courseName, BigDecimal credit, Integer totalHours,
                        String courseType, String examType, Integer status, LocalDateTime createdAt,
-                       LocalDateTime updatedAt) {
+                       LocalDateTime updatedAt, Boolean hasCurrentSemesterTask,
+                       Integer currentSemesterTaskCount, Boolean canDisableInCurrentSemester) {
 }

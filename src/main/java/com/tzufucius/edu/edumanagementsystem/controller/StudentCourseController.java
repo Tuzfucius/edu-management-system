@@ -58,4 +58,10 @@ public class StudentCourseController {
         operationLogService.record(request, session, "成绩管理", "UPDATE_SCORE", "student_course", id, "成绩录入或修改");
         return Result.success(null);
     }
+    @DeleteMapping("/{id}/score")
+    public Result<Void> revokeScore(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
+        service.revokeScore(id);
+        operationLogService.record(request, session, "成绩管理", "REVOKE_SCORE", "student_course", id, "撤销成绩");
+        return Result.success(null);
+    }
 }

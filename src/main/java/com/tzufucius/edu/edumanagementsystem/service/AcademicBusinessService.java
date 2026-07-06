@@ -264,6 +264,9 @@ public class AcademicBusinessService {
         if (record == null || record.status() != 1) {
             throw new RuntimeException("Student course record does not exist");
         }
+        if ((record.gradeStatus() != null && record.gradeStatus() == 1) || record.score() != null) {
+            throw new RuntimeException("Course with existing score cannot be dropped");
+        }
         if (dao.disableStudentCourse(studentCourseId) != 1) {
             throw new RuntimeException("Failed to drop course");
         }
@@ -277,6 +280,12 @@ public class AcademicBusinessService {
         }
         if (dao.updateScore(requiredId(id, "Student course id is required"), score, request.remark()) != 1) {
             throw new RuntimeException("Failed to update score");
+        }
+    }
+
+    public void revokeScore(Long id) {
+        if (dao.revokeScore(requiredId(id, "Student course id is required")) != 1) {
+            throw new RuntimeException("Failed to revoke score");
         }
     }
 
@@ -409,6 +418,9 @@ public class AcademicBusinessService {
     private void validateTeachingTask(TeachingTaskRequest task) {
         requiredId(task.courseId(), "Course id is required");
         requiredId(task.teacherId(), "Teacher id is required");
+        if (dao.countEnabledCourseById(task.courseId()) == 0) {
+            throw new RuntimeException("Course is disabled or does not exist");
+        }
         if (isBlank(task.semester())) {
             throw new RuntimeException("Semester is required");
         }

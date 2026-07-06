@@ -230,6 +230,10 @@ public class AcademicBusinessDao {
                 task.endSection(), task.weeks(), task.classroom(), defaultInt(task.capacity(), 60));
     }
 
+    public int countEnabledCourseById(Long courseId) {
+        return count("SELECT COUNT(*) FROM course WHERE id = ? AND status = 1", courseId);
+    }
+
     public int updateTeachingTask(Long id, TeachingTaskRequest task) {
         return jdbcTemplate.update("""
                 UPDATE teaching_task
@@ -307,7 +311,7 @@ public class AcademicBusinessDao {
                 JOIN teacher t ON t.id = tt.teacher_id
                 LEFT JOIN student_course sc
                   ON sc.teaching_task_id = tt.id AND sc.student_id = ? AND sc.status = 1
-                WHERE tt.task_status = 1 AND tt.semester = ?
+                WHERE tt.task_status = 1 AND c.status = 1 AND tt.semester = ?
                 ORDER BY tt.id DESC
                 """, this::selectableTaskVO, studentId, semester);
     }
@@ -351,7 +355,7 @@ public class AcademicBusinessDao {
     public StudentCourseDropRecord findStudentCourseById(Long id) {
         return findOne("""
                 SELECT sc.id, sc.student_id AS studentId, sc.teaching_task_id AS teachingTaskId,
-                       sc.status, tt.selected_count AS selectedCount
+                       sc.status, sc.grade_status AS gradeStatus, sc.score, tt.selected_count AS selectedCount
                 FROM student_course sc
                 JOIN teaching_task tt ON tt.id = sc.teaching_task_id
                 WHERE sc.id = ?
@@ -360,6 +364,8 @@ public class AcademicBusinessDao {
                         rs.getLong("studentId"),
                         rs.getLong("teachingTaskId"),
                         rs.getInt("status"),
+                        rs.getInt("gradeStatus"),
+                        rs.getBigDecimal("score"),
                         rs.getInt("selectedCount")
                 ), id);
     }
@@ -370,6 +376,14 @@ public class AcademicBusinessDao {
                 SET score = ?, grade_status = 1, remark = ?
                 WHERE id = ? AND status = 1
                 """, score, remark, id);
+    }
+
+    public int revokeScore(Long id) {
+        return jdbcTemplate.update("""
+                UPDATE student_course
+                SET score = NULL, grade_status = 0, remark = NULL
+                WHERE id = ? AND status = 1
+                """, id);
     }
 
     public List<TeacherStudentVO> listTeacherStudents() {
@@ -597,6 +611,6 @@ public class AcademicBusinessDao {
     }
 
     public record StudentCourseDropRecord(Long id, Long studentId, Long teachingTaskId, Integer status,
-                                          Integer selectedCount) {
+                                          Integer gradeStatus, BigDecimal score, Integer selectedCount) {
     }
 }

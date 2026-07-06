@@ -90,8 +90,13 @@ public final class BasicMapper {
     }
 
     public static CourseVO toVO(Course entity) {
+        return toVO(entity, 0);
+    }
+
+    public static CourseVO toVO(Course entity, int currentSemesterTaskCount) {
         return new CourseVO(entity.getId(), entity.getCourseCode(), entity.getCourseName(), entity.getCredit(),
                 entity.getTotalHours(), entity.getCourseType(), entity.getExamType(), entity.getStatus(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getCreatedAt(), entity.getUpdatedAt(), currentSemesterTaskCount > 0,
+                currentSemesterTaskCount, currentSemesterTaskCount == 0);
     }
 }
