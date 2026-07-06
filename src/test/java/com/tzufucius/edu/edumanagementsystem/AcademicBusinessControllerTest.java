@@ -113,6 +113,25 @@ class AcademicBusinessControllerTest {
 
         mockMvc.perform(delete("/api/student-courses/{id}", studentCourseId))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(500));
+
+        mockMvc.perform(delete("/api/student-courses/{id}/score", studentCourseId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+        assertOperationLog("成绩管理", "REVOKE_SCORE");
+        org.junit.jupiter.api.Assertions.assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT grade_status FROM student_course WHERE id = ?",
+                Integer.class,
+                studentCourseId
+        ));
+        org.junit.jupiter.api.Assertions.assertNull(jdbcTemplate.queryForObject(
+                "SELECT score FROM student_course WHERE id = ?",
+                java.math.BigDecimal.class,
+                studentCourseId
+        ));
+
+        mockMvc.perform(delete("/api/student-courses/{id}", studentCourseId))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
         assertOperationLog("选课管理", "DROP_COURSE");
     }
