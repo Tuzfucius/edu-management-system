@@ -206,4 +206,14 @@ public class DepartmentDao {
 
         return count == null ? 0 : count;
     }
+
+    public int countCollegeById(Long collegeId) {
+        String sql = """
+                SELECT COUNT(*)
+                FROM college
+                WHERE id = ? AND status = 1
+                """;
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, collegeId);
+        return count == null ? 0 : count;
+    }
 }

@@ -1,8 +1,10 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
-import com.tzufucius.edu.edumanagementsystem.entity.Department;
+import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.DepartmentRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.DepartmentVO;
 import com.tzufucius.edu.edumanagementsystem.service.DepartmentService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/departments")
 public class DepartmentController {
-
     private final DepartmentService departmentService;
 
     public DepartmentController(DepartmentService departmentService) {
@@ -18,25 +19,24 @@ public class DepartmentController {
     }
 
     @GetMapping
-    public Result<List<Department>> list() {
+    public Result<List<DepartmentVO>> list() {
         return Result.success(departmentService.findAll());
     }
 
     @GetMapping("/{id}")
-    public Result<Department> get(@PathVariable Long id) {
+    public Result<DepartmentVO> get(@PathVariable Long id) {
         return Result.success(departmentService.findById(id));
     }
 
     @PostMapping
-    public Result<Void> create(@RequestBody Department department) {
-        departmentService.addDepartment(department);
+    public Result<Void> create(@Valid @RequestBody DepartmentRequest request) {
+        departmentService.addDepartment(request);
         return Result.success(null);
     }
 
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody Department department) {
-        department.setId(id);
-        departmentService.updateDepartment(department);
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody DepartmentRequest request) {
+        departmentService.updateDepartment(id, request);
         return Result.success(null);
     }
 

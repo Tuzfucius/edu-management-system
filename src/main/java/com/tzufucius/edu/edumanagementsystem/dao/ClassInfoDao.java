@@ -204,4 +204,14 @@ public class ClassInfoDao {
 
         return count == null ? 0 : count;
     }
+
+    public int countMajorById(Long majorId) {
+        String sql = """
+                SELECT COUNT(*)
+                FROM major
+                WHERE id = ? AND status = 1
+                """;
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, majorId);
+        return count == null ? 0 : count;
+    }
 }
