@@ -1,10 +1,10 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.ScoreUpdateRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.StudentCourseSelectRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.SelectableTaskVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.StudentCourseVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.ScoreUpdateRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.StudentCourseSelectRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.SelectableTaskVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.StudentCourseVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
 import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
 import jakarta.servlet.http.HttpServletRequest;

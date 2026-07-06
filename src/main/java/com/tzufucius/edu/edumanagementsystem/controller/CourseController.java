@@ -1,8 +1,8 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.CourseRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.CourseVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CourseRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CourseVO;
 import com.tzufucius.edu.edumanagementsystem.service.CourseService;
 import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
 import jakarta.servlet.http.HttpServletRequest;

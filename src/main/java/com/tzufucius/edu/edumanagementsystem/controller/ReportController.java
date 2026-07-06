@@ -1,9 +1,9 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.NameValueReportVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.OverviewReportVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.TeachingLoadReportVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.NameValueReportVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.OverviewReportVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.TeachingLoadReportVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

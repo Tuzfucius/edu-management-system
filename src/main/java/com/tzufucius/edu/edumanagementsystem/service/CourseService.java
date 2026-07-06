@@ -1,8 +1,8 @@
 package com.tzufucius.edu.edumanagementsystem.service;
 
 import com.tzufucius.edu.edumanagementsystem.dao.CourseDao;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.CourseRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.CourseVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CourseRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CourseVO;
 import com.tzufucius.edu.edumanagementsystem.entity.Course;
 import com.tzufucius.edu.edumanagementsystem.mapper.BasicMapper;
 import org.springframework.stereotype.Service;

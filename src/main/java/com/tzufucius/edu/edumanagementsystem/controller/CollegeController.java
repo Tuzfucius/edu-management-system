@@ -1,8 +1,8 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.CollegeRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.CollegeVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CollegeRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CollegeVO;
 import com.tzufucius.edu.edumanagementsystem.service.CollegeService;
 import org.springframework.web.bind.annotation.*;
 

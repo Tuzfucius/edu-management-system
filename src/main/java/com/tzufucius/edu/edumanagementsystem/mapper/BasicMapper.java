@@ -1,15 +1,15 @@
 package com.tzufucius.edu.edumanagementsystem.mapper;
 
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.ClassInfoRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.CollegeRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.CourseRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.DepartmentRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.MajorRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.ClassInfoVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.CollegeVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.CourseVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.DepartmentVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.MajorVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.ClassInfoRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CollegeRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CourseRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.DepartmentRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.MajorRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.ClassInfoVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CollegeVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CourseVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.DepartmentVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.MajorVO;
 import com.tzufucius.edu.edumanagementsystem.entity.ClassInfo;
 import com.tzufucius.edu.edumanagementsystem.entity.College;
 import com.tzufucius.edu.edumanagementsystem.entity.Course;

@@ -1,8 +1,8 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.TeacherStudentRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.TeacherStudentVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.TeacherStudentRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.TeacherStudentVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;

@@ -1,18 +1,18 @@
 package com.tzufucius.edu.edumanagementsystem.mapper;
 
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.StudentRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.SysUserRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.TeacherRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.TeacherStudentRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.request.AcademicRequests.TeachingTaskRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.OperationLogVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.SelectableTaskVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.StudentCourseVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.StudentVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.SysUserVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.TeacherStudentVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.TeacherVO;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.AcademicVOs.TeachingTaskVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.StudentRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.SysUserRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.TeacherRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.TeacherStudentRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.TeachingTaskRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.OperationLogVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.SelectableTaskVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.StudentCourseVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.StudentVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.SysUserVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.TeacherStudentVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.TeacherVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.TeachingTaskVO;
 
 import java.math.BigDecimal;
 import java.sql.Date;

@@ -1,8 +1,8 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.MajorRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.MajorVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.MajorRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.MajorVO;
 import com.tzufucius.edu.edumanagementsystem.service.MajorService;
 import org.springframework.web.bind.annotation.*;
 

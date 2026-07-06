@@ -1,8 +1,8 @@
 package com.tzufucius.edu.edumanagementsystem.service;
 
 import com.tzufucius.edu.edumanagementsystem.dao.DepartmentDao;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.DepartmentRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.DepartmentVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.DepartmentRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.DepartmentVO;
 import com.tzufucius.edu.edumanagementsystem.entity.Department;
 import com.tzufucius.edu.edumanagementsystem.mapper.BasicMapper;
 import org.springframework.stereotype.Service;

@@ -1,8 +1,8 @@
 package com.tzufucius.edu.edumanagementsystem.service;
 
 import com.tzufucius.edu.edumanagementsystem.dao.MajorDao;
-import com.tzufucius.edu.edumanagementsystem.dto.request.BasicRequests.MajorRequest;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.BasicVOs.MajorVO;
+import com.tzufucius.edu.edumanagementsystem.dto.request.MajorRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.MajorVO;
 import com.tzufucius.edu.edumanagementsystem.entity.Major;
 import com.tzufucius.edu.edumanagementsystem.mapper.BasicMapper;
 import org.springframework.stereotype.Service;
