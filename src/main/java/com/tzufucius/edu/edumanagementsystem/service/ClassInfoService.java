@@ -17,95 +17,71 @@ public class ClassInfoService {
         this.classInfoDao = classInfoDao;
     }
 
-    public List<ClassInfo> findAll() {
-        return classInfoDao.findAll();
+    public List<ClassInfoVO> findAll() {
+        return classInfoDao.findAll().stream().map(BasicMapper::toVO).toList();
     }
 
-    public List<ClassInfoVO> findAllVO() {
-        return findAll().stream().map(BasicMapper::toVO).toList();
-    }
-
-    public ClassInfo findById(Long id) {
-        return requireClassInfo(id, "班级不存在");
-    }
-
-    public ClassInfoVO findByIdVO(Long id) {
-        return BasicMapper.toVO(findById(id));
+    public ClassInfoVO findById(Long id) {
+        return BasicMapper.toVO(requireClassInfo(id));
     }
 
     public void addClassInfo(ClassInfoRequest request) {
-        addClassInfo(BasicMapper.toEntity(request));
-    }
-
-    public void addClassInfo(ClassInfo classInfo) {
+        ClassInfo classInfo = BasicMapper.toEntity(request);
         checkRequiredFields(classInfo);
         checkMajorExists(classInfo.getMajorId());
         if (classInfoDao.countByClassCode(classInfo.getClassCode()) > 0) {
-            throw new RuntimeException("班级编号已存在");
+            throw new RuntimeException("Class code already exists");
         }
         if (classInfoDao.insert(classInfo) != 1) {
-            throw new RuntimeException("新增班级失败");
+            throw new RuntimeException("Failed to create class");
         }
     }
 
     public void updateClassInfo(Long id, ClassInfoRequest request) {
         ClassInfo classInfo = BasicMapper.toEntity(request);
         classInfo.setId(id);
-        updateClassInfo(classInfo);
-    }
-
-    public void updateClassInfo(ClassInfo classInfo) {
-        Long id = classInfo.getId();
         checkRequiredFields(classInfo);
-        requireClassInfo(id, "班级不存在，无法修改");
+        requireClassInfo(id);
         checkMajorExists(classInfo.getMajorId());
         if (classInfoDao.countByClassCodeExcludeId(classInfo.getClassCode(), id) > 0) {
-            throw new RuntimeException("班级编号已存在");
+            throw new RuntimeException("Class code already exists");
         }
         if (classInfoDao.update(classInfo) != 1) {
-            throw new RuntimeException("修改班级失败");
+            throw new RuntimeException("Failed to update class");
         }
     }
 
     public void deleteClassInfo(Long id) {
-        requireClassInfo(id, "班级不存在，无法删除");
+        requireClassInfo(id);
         if (classInfoDao.countStudentByClassId(id) > 0) {
-            throw new RuntimeException("该班级下仍有学生，不能删除");
+            throw new RuntimeException("Class still has students");
         }
         if (classInfoDao.disableById(id) != 1) {
-            throw new RuntimeException("删除班级失败");
+            throw new RuntimeException("Failed to delete class");
         }
     }
 
-    private ClassInfo requireClassInfo(Long id, String message) {
+    private ClassInfo requireClassInfo(Long id) {
         if (id == null) {
-            throw new RuntimeException("班级ID不能为空");
+            throw new RuntimeException("Class id is required");
         }
         ClassInfo classInfo = classInfoDao.findById(id);
         if (classInfo == null) {
-            throw new RuntimeException(message);
+            throw new RuntimeException("Class does not exist");
         }
         return classInfo;
     }
 
     private void checkMajorExists(Long majorId) {
-        if (majorId == null) {
-            throw new RuntimeException("所属专业不能为空");
-        }
-        if (classInfoDao.countMajorById(majorId) == 0) {
-            throw new RuntimeException("所属专业不存在");
+        if (majorId == null || classInfoDao.countMajorById(majorId) == 0) {
+            throw new RuntimeException("Major does not exist");
         }
     }
 
     private void checkRequiredFields(ClassInfo classInfo) {
-        if (classInfo == null) {
-            throw new RuntimeException("班级信息不能为空");
-        }
-        if (classInfo.getClassCode() == null || classInfo.getClassCode().isBlank()) {
-            throw new RuntimeException("班级编号不能为空");
-        }
-        if (classInfo.getClassName() == null || classInfo.getClassName().isBlank()) {
-            throw new RuntimeException("班级名称不能为空");
+        if (classInfo == null || classInfo.getClassCode() == null || classInfo.getClassCode().isBlank()
+                || classInfo.getClassName() == null || classInfo.getClassName().isBlank()) {
+            throw new RuntimeException("Required class fields are missing");
         }
     }
 }

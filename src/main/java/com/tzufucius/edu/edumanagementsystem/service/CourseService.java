@@ -7,6 +7,7 @@ import com.tzufucius.edu.edumanagementsystem.entity.Course;
 import com.tzufucius.edu.edumanagementsystem.mapper.BasicMapper;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -17,87 +18,64 @@ public class CourseService {
         this.courseDao = courseDao;
     }
 
-    public List<Course> findAll() {
-        return courseDao.findAll();
+    public List<CourseVO> findAll() {
+        return courseDao.findAll().stream().map(BasicMapper::toVO).toList();
     }
 
-    public List<CourseVO> findAllVO() {
-        return findAll().stream().map(BasicMapper::toVO).toList();
-    }
-
-    public Course findById(Long id) {
-        return requireCourse(id, "课程不存在");
-    }
-
-    public CourseVO findByIdVO(Long id) {
-        return BasicMapper.toVO(findById(id));
+    public CourseVO findById(Long id) {
+        return BasicMapper.toVO(requireCourse(id));
     }
 
     public void addCourse(CourseRequest request) {
-        addCourse(BasicMapper.toEntity(request));
-    }
-
-    public void addCourse(Course course) {
+        Course course = BasicMapper.toEntity(request);
         checkRequiredFields(course);
         if (courseDao.countByCourseCode(course.getCourseCode()) > 0) {
-            throw new RuntimeException("课程编号已存在");
+            throw new RuntimeException("Course code already exists");
         }
         if (courseDao.insert(course) != 1) {
-            throw new RuntimeException("新增课程失败");
+            throw new RuntimeException("Failed to create course");
         }
     }
 
     public void updateCourse(Long id, CourseRequest request) {
         Course course = BasicMapper.toEntity(request);
         course.setId(id);
-        updateCourse(course);
-    }
-
-    public void updateCourse(Course course) {
-        Long id = course.getId();
         checkRequiredFields(course);
-        requireCourse(id, "课程不存在，无法修改");
+        requireCourse(id);
         if (courseDao.countByCourseCodeExcludeId(course.getCourseCode(), id) > 0) {
-            throw new RuntimeException("课程编号已存在");
+            throw new RuntimeException("Course code already exists");
         }
         if (courseDao.update(course) != 1) {
-            throw new RuntimeException("修改课程失败");
+            throw new RuntimeException("Failed to update course");
         }
     }
 
     public void deleteCourse(Long id) {
-        requireCourse(id, "课程不存在，无法删除");
+        requireCourse(id);
         if (courseDao.countTeachingTaskByCourseId(id) > 0) {
-            throw new RuntimeException("该课程已有任课安排，不能删除");
+            throw new RuntimeException("Course still has teaching tasks");
         }
         if (courseDao.disableById(id) != 1) {
-            throw new RuntimeException("删除课程失败");
+            throw new RuntimeException("Failed to delete course");
         }
     }
 
-    private Course requireCourse(Long id, String message) {
+    private Course requireCourse(Long id) {
         if (id == null) {
-            throw new RuntimeException("课程ID不能为空");
+            throw new RuntimeException("Course id is required");
         }
         Course course = courseDao.findById(id);
         if (course == null) {
-            throw new RuntimeException(message);
+            throw new RuntimeException("Course does not exist");
         }
         return course;
     }
 
     private void checkRequiredFields(Course course) {
-        if (course == null) {
-            throw new RuntimeException("课程信息不能为空");
-        }
-        if (course.getCourseCode() == null || course.getCourseCode().isBlank()) {
-            throw new RuntimeException("课程编号不能为空");
-        }
-        if (course.getCourseName() == null || course.getCourseName().isBlank()) {
-            throw new RuntimeException("课程名称不能为空");
-        }
-        if (course.getCredit() == null || course.getCredit().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("课程学分必须大于0");
+        if (course == null || course.getCourseCode() == null || course.getCourseCode().isBlank()
+                || course.getCourseName() == null || course.getCourseName().isBlank()
+                || course.getCredit() == null || course.getCredit().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Required course fields are missing");
         }
     }
 }

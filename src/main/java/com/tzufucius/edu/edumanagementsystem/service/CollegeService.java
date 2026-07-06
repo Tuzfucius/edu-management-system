@@ -17,84 +17,63 @@ public class CollegeService {
         this.collegeDao = collegeDao;
     }
 
-    public List<College> findAll() {
-        return collegeDao.findAll();
+    public List<CollegeVO> findAll() {
+        return collegeDao.findAll().stream().map(BasicMapper::toVO).toList();
     }
 
-    public List<CollegeVO> findAllVO() {
-        return findAll().stream().map(BasicMapper::toVO).toList();
-    }
-
-    public College findById(Long id) {
-        return requireCollege(id, "学院不存在");
-    }
-
-    public CollegeVO findByIdVO(Long id) {
-        return BasicMapper.toVO(findById(id));
+    public CollegeVO findById(Long id) {
+        return BasicMapper.toVO(requireCollege(id));
     }
 
     public void addCollege(CollegeRequest request) {
-        addCollege(BasicMapper.toEntity(request));
-    }
-
-    public void addCollege(College college) {
+        College college = BasicMapper.toEntity(request);
         checkRequiredFields(college);
         if (collegeDao.countByCollegeCode(college.getCollegeCode()) > 0) {
-            throw new RuntimeException("学院编号已存在");
+            throw new RuntimeException("College code already exists");
         }
         if (collegeDao.insert(college) != 1) {
-            throw new RuntimeException("新增学院失败");
+            throw new RuntimeException("Failed to create college");
         }
     }
 
     public void updateCollege(Long id, CollegeRequest request) {
         College college = BasicMapper.toEntity(request);
         college.setId(id);
-        updateCollege(college);
-    }
-
-    public void updateCollege(College college) {
-        Long id = college.getId();
         checkRequiredFields(college);
-        requireCollege(id, "学院不存在，无法修改");
+        requireCollege(id);
         if (collegeDao.countByCollegeCodeExcludeId(college.getCollegeCode(), id) > 0) {
-            throw new RuntimeException("学院编号已存在");
+            throw new RuntimeException("College code already exists");
         }
         if (collegeDao.update(college) != 1) {
-            throw new RuntimeException("修改学院失败");
+            throw new RuntimeException("Failed to update college");
         }
     }
 
     public void deleteCollege(Long id) {
-        requireCollege(id, "学院不存在，无法删除");
+        requireCollege(id);
         if (collegeDao.countMajorByCollegeId(id) > 0) {
-            throw new RuntimeException("该学院下仍有专业，不能删除");
+            throw new RuntimeException("College still has majors");
         }
         if (collegeDao.disableById(id) != 1) {
-            throw new RuntimeException("删除学院失败");
+            throw new RuntimeException("Failed to delete college");
         }
     }
 
-    private College requireCollege(Long id, String message) {
+    private College requireCollege(Long id) {
         if (id == null) {
-            throw new RuntimeException("学院ID不能为空");
+            throw new RuntimeException("College id is required");
         }
         College college = collegeDao.findById(id);
         if (college == null) {
-            throw new RuntimeException(message);
+            throw new RuntimeException("College does not exist");
         }
         return college;
     }
 
     private void checkRequiredFields(College college) {
-        if (college == null) {
-            throw new RuntimeException("学院信息不能为空");
-        }
-        if (college.getCollegeCode() == null || college.getCollegeCode().isBlank()) {
-            throw new RuntimeException("学院编号不能为空");
-        }
-        if (college.getCollegeName() == null || college.getCollegeName().isBlank()) {
-            throw new RuntimeException("学院名称不能为空");
+        if (college == null || college.getCollegeCode() == null || college.getCollegeCode().isBlank()
+                || college.getCollegeName() == null || college.getCollegeName().isBlank()) {
+            throw new RuntimeException("Required college fields are missing");
         }
     }
 }

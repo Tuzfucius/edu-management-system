@@ -19,12 +19,12 @@ public class MajorController {
 
     @GetMapping
     public Result<List<MajorVO>> list() {
-        return Result.success(majorService.findAllVO());
+        return Result.success(majorService.findAll());
     }
 
     @GetMapping("/{id}")
     public Result<MajorVO> get(@PathVariable Long id) {
-        return Result.success(majorService.findByIdVO(id));
+        return Result.success(majorService.findById(id));
     }
 
     @PostMapping

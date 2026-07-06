@@ -17,95 +17,71 @@ public class MajorService {
         this.majorDao = majorDao;
     }
 
-    public List<Major> findAll() {
-        return majorDao.findAll();
+    public List<MajorVO> findAll() {
+        return majorDao.findAll().stream().map(BasicMapper::toVO).toList();
     }
 
-    public List<MajorVO> findAllVO() {
-        return findAll().stream().map(BasicMapper::toVO).toList();
-    }
-
-    public Major findById(Long id) {
-        return requireMajor(id, "专业不存在");
-    }
-
-    public MajorVO findByIdVO(Long id) {
-        return BasicMapper.toVO(findById(id));
+    public MajorVO findById(Long id) {
+        return BasicMapper.toVO(requireMajor(id));
     }
 
     public void addMajor(MajorRequest request) {
-        addMajor(BasicMapper.toEntity(request));
-    }
-
-    public void addMajor(Major major) {
+        Major major = BasicMapper.toEntity(request);
         checkRequiredFields(major);
         checkCollegeExists(major.getCollegeId());
         if (majorDao.countByMajorCode(major.getMajorCode()) > 0) {
-            throw new RuntimeException("专业编号已存在");
+            throw new RuntimeException("Major code already exists");
         }
         if (majorDao.insert(major) != 1) {
-            throw new RuntimeException("新增专业失败");
+            throw new RuntimeException("Failed to create major");
         }
     }
 
     public void updateMajor(Long id, MajorRequest request) {
         Major major = BasicMapper.toEntity(request);
         major.setId(id);
-        updateMajor(major);
-    }
-
-    public void updateMajor(Major major) {
-        Long id = major.getId();
         checkRequiredFields(major);
-        requireMajor(id, "专业不存在，无法修改");
+        requireMajor(id);
         checkCollegeExists(major.getCollegeId());
         if (majorDao.countByMajorCodeExcludeId(major.getMajorCode(), id) > 0) {
-            throw new RuntimeException("专业编号已存在");
+            throw new RuntimeException("Major code already exists");
         }
         if (majorDao.update(major) != 1) {
-            throw new RuntimeException("修改专业失败");
+            throw new RuntimeException("Failed to update major");
         }
     }
 
     public void deleteMajor(Long id) {
-        requireMajor(id, "专业不存在，无法删除");
+        requireMajor(id);
         if (majorDao.countClassByMajorId(id) > 0) {
-            throw new RuntimeException("该专业下仍有班级，不能删除");
+            throw new RuntimeException("Major still has classes");
         }
         if (majorDao.disableById(id) != 1) {
-            throw new RuntimeException("删除专业失败");
+            throw new RuntimeException("Failed to delete major");
         }
     }
 
-    private Major requireMajor(Long id, String message) {
+    private Major requireMajor(Long id) {
         if (id == null) {
-            throw new RuntimeException("专业ID不能为空");
+            throw new RuntimeException("Major id is required");
         }
         Major major = majorDao.findById(id);
         if (major == null) {
-            throw new RuntimeException(message);
+            throw new RuntimeException("Major does not exist");
         }
         return major;
     }
 
     private void checkCollegeExists(Long collegeId) {
-        if (collegeId == null) {
-            throw new RuntimeException("所属学院不能为空");
-        }
-        if (majorDao.countCollegeById(collegeId) == 0) {
-            throw new RuntimeException("所属学院不存在");
+        if (collegeId == null || majorDao.countCollegeById(collegeId) == 0) {
+            throw new RuntimeException("College does not exist");
         }
     }
 
     private void checkRequiredFields(Major major) {
-        if (major == null) {
-            throw new RuntimeException("专业信息不能为空");
-        }
-        if (major.getMajorCode() == null || major.getMajorCode().isBlank()) {
-            throw new RuntimeException("专业编号不能为空");
-        }
-        if (major.getMajorName() == null || major.getMajorName().isBlank()) {
-            throw new RuntimeException("专业名称不能为空");
+        if (major == null || major.getMajorCode() == null || major.getMajorCode().isBlank()
+                || major.getMajorName() == null || major.getMajorName().isBlank()) {
+            throw new RuntimeException("Required major fields are missing");
         }
     }
 }

@@ -19,12 +19,12 @@ public class DepartmentController {
 
     @GetMapping
     public Result<List<DepartmentVO>> list() {
-        return Result.success(departmentService.findAllVO());
+        return Result.success(departmentService.findAll());
     }
 
     @GetMapping("/{id}")
     public Result<DepartmentVO> get(@PathVariable Long id) {
-        return Result.success(departmentService.findByIdVO(id));
+        return Result.success(departmentService.findById(id));
     }
 
     @PostMapping

@@ -24,12 +24,12 @@ public class CourseController {
 
     @GetMapping
     public Result<List<CourseVO>> list() {
-        return Result.success(courseService.findAllVO());
+        return Result.success(courseService.findAll());
     }
 
     @GetMapping("/{id}")
     public Result<CourseVO> get(@PathVariable Long id) {
-        return Result.success(courseService.findByIdVO(id));
+        return Result.success(courseService.findById(id));
     }
 
     @PostMapping

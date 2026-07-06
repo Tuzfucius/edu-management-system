@@ -19,12 +19,12 @@ public class CollegeController {
 
     @GetMapping
     public Result<List<CollegeVO>> list() {
-        return Result.success(collegeService.findAllVO());
+        return Result.success(collegeService.findAll());
     }
 
     @GetMapping("/{id}")
     public Result<CollegeVO> get(@PathVariable Long id) {
-        return Result.success(collegeService.findByIdVO(id));
+        return Result.success(collegeService.findById(id));
     }
 
     @PostMapping

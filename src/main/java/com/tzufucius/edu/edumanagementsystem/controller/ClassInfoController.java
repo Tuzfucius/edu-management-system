@@ -19,12 +19,12 @@ public class ClassInfoController {
 
     @GetMapping
     public Result<List<ClassInfoVO>> list() {
-        return Result.success(classInfoService.findAllVO());
+        return Result.success(classInfoService.findAll());
     }
 
     @GetMapping("/{id}")
     public Result<ClassInfoVO> get(@PathVariable Long id) {
-        return Result.success(classInfoService.findByIdVO(id));
+        return Result.success(classInfoService.findById(id));
     }
 
     @PostMapping
