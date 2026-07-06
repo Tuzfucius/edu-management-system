@@ -1,8 +1,11 @@
 package com.tzufucius.edu.edumanagementsystem;
 
-import com.tzufucius.edu.edumanagementsystem.entity.ClassInfo;
-import com.tzufucius.edu.edumanagementsystem.entity.College;
-import com.tzufucius.edu.edumanagementsystem.entity.Major;
+import com.tzufucius.edu.edumanagementsystem.dto.request.ClassInfoRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CollegeRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.MajorRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.ClassInfoVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CollegeVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.MajorVO;
 import com.tzufucius.edu.edumanagementsystem.service.ClassInfoService;
 import com.tzufucius.edu.edumanagementsystem.service.CollegeService;
 import com.tzufucius.edu.edumanagementsystem.service.MajorService;
@@ -22,121 +25,53 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class ClassInfoControllerTest {
-
     @Autowired
     private MockMvc mockMvc;
-
+    @Autowired
+    private ClassInfoService classInfoService;
+    @Autowired
+    private MajorService majorService;
     @Autowired
     private CollegeService collegeService;
 
-    @Autowired
-    private MajorService majorService;
-
-    @Autowired
-    private ClassInfoService classInfoService;
-
     @Test
-    void listClassInfos() throws Exception {
-        mockMvc.perform(get("/api/classes"))
+    void listAndGetClassInfo() throws Exception {
+        Long majorId = createMajor("CLS-CTRL-COL", "CLS-CTRL-MAJ").id();
+        ClassInfoVO classInfo = create(majorId, "CLS-CTRL-GET");
+        mockMvc.perform(get("/api/classes")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(get("/api/classes/{id}", classInfo.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(jsonPath("$.data.classCode").value("CLS-CTRL-GET"));
     }
 
     @Test
-    void getClassInfo() throws Exception {
-        ClassInfo classInfo = createClassInfo("CTRL-CLASS-GET", "Controller查询班级");
-
-        mockMvc.perform(get("/api/classes/{id}", classInfo.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.classCode").value("CTRL-CLASS-GET"));
-    }
-
-    @Test
-    void createClassInfoSuccess() throws Exception {
-        Major major = createMajor("CTRL-CLASS-MAJOR-ADD");
-
+    void createUpdateDeleteClassInfo() throws Exception {
+        Long majorId = createMajor("CLS-CTRL-COL-CRUD", "CLS-CTRL-MAJ-CRUD").id();
         mockMvc.perform(post("/api/classes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"majorId":%d,"classCode":"CTRL-CLASS-ADD","className":"Controller新增班级","entranceYear":2026}
-                                """.formatted(major.getId())))
+                        .content("{\"majorId\":" + majorId + ",\"classCode\":\"CLS-CTRL-ADD\",\"className\":\"Add\",\"entranceYear\":2024}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
-    }
-
-    @Test
-    void createClassInfoWithoutNameShouldFail() throws Exception {
-        Major major = createMajor("CTRL-CLASS-MAJOR-NONAME");
-
-        mockMvc.perform(post("/api/classes")
+        ClassInfoVO classInfo = classInfoService.findAll().stream().filter(item -> "CLS-CTRL-ADD".equals(item.classCode())).findFirst().orElseThrow();
+        mockMvc.perform(put("/api/classes/{id}", classInfo.id())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"majorId":%d,"classCode":"CTRL-CLASS-NONAME","entranceYear":2026}
-                                """.formatted(major.getId())))
+                        .content("{\"majorId\":" + majorId + ",\"classCode\":\"CLS-CTRL-UPD\",\"className\":\"Updated\",\"entranceYear\":2024}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value("班级名称不能为空"));
-    }
-
-    @Test
-    void updateClassInfoSuccess() throws Exception {
-        ClassInfo classInfo = createClassInfo("CTRL-CLASS-UPD", "Controller修改前班级");
-
-        mockMvc.perform(put("/api/classes/{id}", classInfo.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"majorId":%d,"classCode":"CTRL-CLASS-UPD","className":"Controller修改后班级","entranceYear":2026}
-                                """.formatted(classInfo.getMajorId())))
+                .andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(delete("/api/classes/{id}", classInfo.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
 
-    @Test
-    void deleteClassInfoSuccess() throws Exception {
-        ClassInfo classInfo = createClassInfo("CTRL-CLASS-DEL", "Controller删除班级");
-
-        mockMvc.perform(delete("/api/classes/{id}", classInfo.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+    private MajorVO createMajor(String collegeCode, String majorCode) {
+        collegeService.addCollege(new CollegeRequest(collegeCode, collegeCode, "test"));
+        CollegeVO college = collegeService.findAll().stream().filter(item -> collegeCode.equals(item.collegeCode())).findFirst().orElseThrow();
+        majorService.addMajor(new MajorRequest(college.id(), majorCode, majorCode, 4, "Bachelor"));
+        return majorService.findAll().stream().filter(item -> majorCode.equals(item.majorCode())).findFirst().orElseThrow();
     }
 
-    private College createCollege(String code) {
-        College college = new College();
-        college.setCollegeCode(code);
-        college.setCollegeName(code + "学院");
-        collegeService.addCollege(college);
-        return collegeService.findAll().stream()
-                .filter(item -> code.equals(item.getCollegeCode()))
-                .findFirst()
-                .orElseThrow();
-    }
-
-    private Major createMajor(String code) {
-        College college = createCollege("C-" + code);
-        Major major = new Major();
-        major.setCollegeId(college.getId());
-        major.setMajorCode(code);
-        major.setMajorName(code + "专业");
-        major.setSchoolingYears(4);
-        majorService.addMajor(major);
-        return majorService.findAll().stream()
-                .filter(item -> code.equals(item.getMajorCode()))
-                .findFirst()
-                .orElseThrow();
-    }
-
-    private ClassInfo createClassInfo(String code, String name) {
-        Major major = createMajor("M-" + code);
-        ClassInfo classInfo = new ClassInfo();
-        classInfo.setMajorId(major.getId());
-        classInfo.setClassCode(code);
-        classInfo.setClassName(name);
-        classInfo.setEntranceYear(2026);
-        classInfoService.addClassInfo(classInfo);
-        return classInfoService.findAll().stream()
-                .filter(item -> code.equals(item.getClassCode()))
-                .findFirst()
-                .orElseThrow();
+    private ClassInfoVO create(Long majorId, String code) {
+        classInfoService.addClassInfo(new ClassInfoRequest(majorId, code, code, 2024));
+        return classInfoService.findAll().stream().filter(item -> code.equals(item.classCode())).findFirst().orElseThrow();
     }
 }

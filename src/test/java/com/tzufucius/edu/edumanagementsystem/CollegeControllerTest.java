@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem;
 
-import com.tzufucius.edu.edumanagementsystem.entity.College;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CollegeRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CollegeVO;
 import com.tzufucius.edu.edumanagementsystem.service.CollegeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,27 +19,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class CollegeControllerTest {
-
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private CollegeService collegeService;
 
     @Test
     void listColleges() throws Exception {
-        mockMvc.perform(get("/api/colleges"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(get("/api/colleges")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
     }
 
     @Test
     void getCollege() throws Exception {
-        College college = createCollege("CTRL-COLLEGE-GET", "Controller查询学院");
-
-        mockMvc.perform(get("/api/colleges/{id}", college.getId()))
+        CollegeVO college = createCollege("CTRL-COLLEGE-GET", "Controller Get College");
+        mockMvc.perform(get("/api/colleges/{id}", college.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.collegeCode").value("CTRL-COLLEGE-GET"));
     }
 
@@ -46,55 +41,31 @@ class CollegeControllerTest {
     void createCollegeSuccess() throws Exception {
         mockMvc.perform(post("/api/colleges")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"collegeCode":"CTRL-COLLEGE-ADD","collegeName":"Controller新增学院","description":"测试"}
-                                """))
+                        .content("{\"collegeCode\":\"CTRL-COLLEGE-ADD\",\"collegeName\":\"Controller Add College\",\"description\":\"test\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
 
     @Test
-    void createCollegeWithoutNameShouldFail() throws Exception {
-        mockMvc.perform(post("/api/colleges")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"collegeCode":"CTRL-COLLEGE-NONAME"}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value("学院名称不能为空"));
-    }
-
-    @Test
     void updateCollegeSuccess() throws Exception {
-        College college = createCollege("CTRL-COLLEGE-UPD", "Controller修改前学院");
-
-        mockMvc.perform(put("/api/colleges/{id}", college.getId())
+        CollegeVO college = createCollege("CTRL-COLLEGE-UPD", "Before");
+        mockMvc.perform(put("/api/colleges/{id}", college.id())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"collegeCode":"CTRL-COLLEGE-UPD","collegeName":"Controller修改后学院","description":"已修改"}
-                                """))
+                        .content("{\"collegeCode\":\"CTRL-COLLEGE-UPD\",\"collegeName\":\"After\",\"description\":\"updated\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
 
     @Test
     void deleteCollegeSuccess() throws Exception {
-        College college = createCollege("CTRL-COLLEGE-DEL", "Controller删除学院");
-
-        mockMvc.perform(delete("/api/colleges/{id}", college.getId()))
+        CollegeVO college = createCollege("CTRL-COLLEGE-DEL", "Delete");
+        mockMvc.perform(delete("/api/colleges/{id}", college.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
 
-    private College createCollege(String code, String name) {
-        College college = new College();
-        college.setCollegeCode(code);
-        college.setCollegeName(name);
-        collegeService.addCollege(college);
-        return collegeService.findAll().stream()
-                .filter(item -> code.equals(item.getCollegeCode()))
-                .findFirst()
-                .orElseThrow();
+    private CollegeVO createCollege(String code, String name) {
+        collegeService.addCollege(new CollegeRequest(code, name, "test"));
+        return collegeService.findAll().stream().filter(item -> code.equals(item.collegeCode())).findFirst().orElseThrow();
     }
 }

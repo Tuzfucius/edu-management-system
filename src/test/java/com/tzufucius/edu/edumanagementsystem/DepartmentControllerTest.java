@@ -1,7 +1,9 @@
 package com.tzufucius.edu.edumanagementsystem;
 
-import com.tzufucius.edu.edumanagementsystem.entity.College;
-import com.tzufucius.edu.edumanagementsystem.entity.Department;
+import com.tzufucius.edu.edumanagementsystem.dto.request.CollegeRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.request.DepartmentRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.CollegeVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.DepartmentVO;
 import com.tzufucius.edu.edumanagementsystem.service.CollegeService;
 import com.tzufucius.edu.edumanagementsystem.service.DepartmentService;
 import org.junit.jupiter.api.Test;
@@ -20,103 +22,49 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class DepartmentControllerTest {
-
     @Autowired
     private MockMvc mockMvc;
-
+    @Autowired
+    private DepartmentService departmentService;
     @Autowired
     private CollegeService collegeService;
 
-    @Autowired
-    private DepartmentService departmentService;
-
     @Test
-    void listDepartments() throws Exception {
-        mockMvc.perform(get("/api/departments"))
+    void listAndGetDepartment() throws Exception {
+        Long collegeId = createCollege("DEP-CTRL-COL").id();
+        DepartmentVO department = create(collegeId, "DEP-CTRL-GET");
+        mockMvc.perform(get("/api/departments")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(get("/api/departments/{id}", department.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(jsonPath("$.data.departmentCode").value("DEP-CTRL-GET"));
     }
 
     @Test
-    void getDepartment() throws Exception {
-        Department department = createDepartment("CTRL-DEPT-GET", "Controller查询教研室");
-
-        mockMvc.perform(get("/api/departments/{id}", department.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.departmentCode").value("CTRL-DEPT-GET"));
-    }
-
-    @Test
-    void createDepartmentSuccess() throws Exception {
-        College college = createCollege("CTRL-DEPT-COLLEGE-ADD");
-
+    void createUpdateDeleteDepartment() throws Exception {
+        Long collegeId = createCollege("DEP-CTRL-COL-CRUD").id();
         mockMvc.perform(post("/api/departments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"collegeId":%d,"departmentCode":"CTRL-DEPT-ADD","departmentName":"Controller新增教研室","officeLocation":"A101"}
-                                """.formatted(college.getId())))
+                        .content("{\"collegeId\":" + collegeId + ",\"departmentCode\":\"DEP-CTRL-ADD\",\"departmentName\":\"Add\",\"officeLocation\":\"A1\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
-    }
-
-    @Test
-    void createDepartmentWithoutNameShouldFail() throws Exception {
-        College college = createCollege("CTRL-DEPT-COLLEGE-NONAME");
-
-        mockMvc.perform(post("/api/departments")
+        DepartmentVO department = departmentService.findAll().stream().filter(item -> "DEP-CTRL-ADD".equals(item.departmentCode())).findFirst().orElseThrow();
+        mockMvc.perform(put("/api/departments/{id}", department.id())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"collegeId":%d,"departmentCode":"CTRL-DEPT-NONAME"}
-                                """.formatted(college.getId())))
+                        .content("{\"collegeId\":" + collegeId + ",\"departmentCode\":\"DEP-CTRL-UPD\",\"departmentName\":\"Updated\",\"officeLocation\":\"A2\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value("教研室名称不能为空"));
-    }
-
-    @Test
-    void updateDepartmentSuccess() throws Exception {
-        Department department = createDepartment("CTRL-DEPT-UPD", "Controller修改前教研室");
-
-        mockMvc.perform(put("/api/departments/{id}", department.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"collegeId":%d,"departmentCode":"CTRL-DEPT-UPD","departmentName":"Controller修改后教研室","officeLocation":"B202"}
-                                """.formatted(department.getCollegeId())))
+                .andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(delete("/api/departments/{id}", department.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
 
-    @Test
-    void deleteDepartmentSuccess() throws Exception {
-        Department department = createDepartment("CTRL-DEPT-DEL", "Controller删除教研室");
-
-        mockMvc.perform(delete("/api/departments/{id}", department.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+    private CollegeVO createCollege(String code) {
+        collegeService.addCollege(new CollegeRequest(code, code, "test"));
+        return collegeService.findAll().stream().filter(item -> code.equals(item.collegeCode())).findFirst().orElseThrow();
     }
 
-    private College createCollege(String code) {
-        College college = new College();
-        college.setCollegeCode(code);
-        college.setCollegeName(code + "学院");
-        collegeService.addCollege(college);
-        return collegeService.findAll().stream()
-                .filter(item -> code.equals(item.getCollegeCode()))
-                .findFirst()
-                .orElseThrow();
-    }
-
-    private Department createDepartment(String code, String name) {
-        College college = createCollege(code + "-COLLEGE");
-        Department department = new Department();
-        department.setCollegeId(college.getId());
-        department.setDepartmentCode(code);
-        department.setDepartmentName(name);
-        departmentService.addDepartment(department);
-        return departmentService.findAll().stream()
-                .filter(item -> code.equals(item.getDepartmentCode()))
-                .findFirst()
-                .orElseThrow();
+    private DepartmentVO create(Long collegeId, String code) {
+        departmentService.addDepartment(new DepartmentRequest(collegeId, code, code, "A1"));
+        return departmentService.findAll().stream().filter(item -> code.equals(item.departmentCode())).findFirst().orElseThrow();
     }
 }

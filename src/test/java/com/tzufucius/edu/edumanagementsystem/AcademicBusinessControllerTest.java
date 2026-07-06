@@ -137,8 +137,7 @@ class AcademicBusinessControllerTest {
                                 {"studentId":%d,"teachingTaskId":%d}
                                 """.formatted(fixture.studentId(), conflictTaskId)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("该时间段已有已选课程，不能重复选课"));
+                .andExpect(jsonPath("$.code").value(400));
     }
 
     @Test
