@@ -1,4 +1,4 @@
-package com.tzufucius.edu.edumanagementsystem.dto;
+package com.tzufucius.edu.edumanagementsystem.dto.request;
 
 public class LoginRequest {
     private String username;

@@ -1,4 +1,4 @@
-package com.tzufucius.edu.edumanagementsystem.dto;
+package com.tzufucius.edu.edumanagementsystem.dto.vo;
 
 public class LoginUserVO {
     private Long id;

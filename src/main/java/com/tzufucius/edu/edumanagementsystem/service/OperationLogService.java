@@ -2,7 +2,7 @@ package com.tzufucius.edu.edumanagementsystem.service;
 
 import com.tzufucius.edu.edumanagementsystem.common.PageResult;
 import com.tzufucius.edu.edumanagementsystem.dao.OperationLogDao;
-import com.tzufucius.edu.edumanagementsystem.dto.LoginUserVO;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.LoginUserVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
