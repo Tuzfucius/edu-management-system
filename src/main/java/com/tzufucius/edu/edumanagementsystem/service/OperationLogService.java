@@ -2,9 +2,8 @@ package com.tzufucius.edu.edumanagementsystem.service;
 
 import com.tzufucius.edu.edumanagementsystem.common.PageResult;
 import com.tzufucius.edu.edumanagementsystem.dao.OperationLogDao;
-import com.tzufucius.edu.edumanagementsystem.dto.vo.OperationLogVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.LoginUserVO;
-import com.tzufucius.edu.edumanagementsystem.mapper.AcademicMapper;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.OperationLogVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -42,9 +41,7 @@ public class OperationLogService {
                                            String startTime, String endTime, Integer page, Integer size) {
         int safePage = page == null || page < 1 ? 1 : page;
         int safeSize = size == null || size < 1 ? 10 : Math.min(size, 100);
-        PageResult<java.util.Map<String, Object>> result = operationLogDao.page(moduleName, operationType, userId, startTime, endTime, safePage, safeSize);
-        return PageResult.of(result.getRecords().stream().map(AcademicMapper::toOperationLogVO).toList(),
-                result.getTotal(), result.getPage(), result.getSize());
+        return operationLogDao.page(moduleName, operationType, userId, startTime, endTime, safePage, safeSize);
     }
 
     private Long currentUserId(HttpSession session) {

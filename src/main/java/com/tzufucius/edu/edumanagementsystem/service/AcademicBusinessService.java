@@ -8,6 +8,7 @@ import com.tzufucius.edu.edumanagementsystem.dto.request.SysUserRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.request.TeacherRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.request.TeacherStudentRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.request.TeachingTaskRequest;
+import com.tzufucius.edu.edumanagementsystem.dto.vo.LoginUserVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.NameValueReportVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.OverviewReportVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.SelectableTaskVO;
@@ -19,14 +20,12 @@ import com.tzufucius.edu.edumanagementsystem.dto.vo.TeacherVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.TeachingLoadReportVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.TeachingTaskVO;
 import com.tzufucius.edu.edumanagementsystem.exception.BusinessException;
-import com.tzufucius.edu.edumanagementsystem.mapper.AcademicMapper;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class AcademicBusinessService {
@@ -36,456 +35,425 @@ public class AcademicBusinessService {
         this.dao = dao;
     }
 
-    public Map<String, Object> login(String username, String password, String role) {
-        if (isBlank(username) || isBlank(password) || isBlank(role)) {
-            throw new RuntimeException("用户名、密码和角色不能为空");
-        }
-        if (!List.of("ADMIN", "TEACHER", "STUDENT").contains(role)) {
-            throw new RuntimeException("角色不合法");
-        }
+    public LoginUserVO login(String username, String password, String role) {
+        validateLogin(username, password, role);
         try {
-            Map<String, Object> user = dao.findUserForLogin(username, role);
+            AcademicBusinessDao.LoginUserRecord user = dao.findUserForLogin(username, role);
             if (user == null) {
                 if ("123456".equals(password)) {
                     return fallbackUser(username, role);
                 }
-                throw new RuntimeException("密码错误");
+                throw new RuntimeException("Password is incorrect");
             }
-            if (!password.equals(String.valueOf(user.get("password")))) {
-                throw new RuntimeException("密码错误");
+            if (!password.equals(user.password())) {
+                throw new RuntimeException("Password is incorrect");
             }
-            Long id = longValue(user.get("id"));
-            dao.updateLastLogin(id);
-            return Map.of("id", id, "username", user.get("username"),
-                    "displayName", user.get("displayName"), "role", user.get("role"));
+            dao.updateLastLogin(user.id());
+            return new LoginUserVO(user.id(), user.username(), user.displayName(), user.role());
         } catch (DataAccessException exception) {
             if (!"123456".equals(password)) {
-                throw new RuntimeException("密码错误");
+                throw new RuntimeException("Password is incorrect");
             }
             return fallbackUser(username, role);
         }
     }
 
     public List<SysUserVO> listUsers() {
-        return dao.listUsers().stream().map(AcademicMapper::toSysUserVO).toList();
+        return dao.listUsers();
     }
 
     public SysUserVO getUser(Long id) {
-        return AcademicMapper.toSysUserVO(requireUserMap(id));
+        return requireUser(id);
     }
 
     public Long createUser(SysUserRequest request) {
-        return createUser(AcademicMapper.toMap(request));
+        return insertUser(normalizeUserRequest(request, request.role()));
     }
 
     public void updateUser(Long id, SysUserRequest request) {
-        Map<String, Object> user = AcademicMapper.toMap(request);
-        requiredId(id, "用户ID不能为空");
-        validateUser(user, id);
-        requireUserMap(id);
-        if (dao.countUsername(text(user.get("username")), id) > 0) {
-            throw new RuntimeException("用户名已存在");
+        requiredId(id, "User id is required");
+        validateUser(request, id);
+        requireUser(id);
+        if (dao.countUsername(request.username(), id) > 0) {
+            throw new RuntimeException("Username already exists");
         }
-        if (dao.updateUser(id, user) != 1) {
-            throw new RuntimeException("修改用户失败");
+        if (dao.updateUser(id, request) != 1) {
+            throw new RuntimeException("Failed to update user");
         }
     }
 
     public void deleteUser(Long id) {
-        requireUserMap(id);
+        requireUser(id);
         if (dao.disableUser(id) != 1) {
-            throw new RuntimeException("停用用户失败");
+            throw new RuntimeException("Failed to disable user");
         }
     }
 
     public List<StudentVO> listStudents() {
-        return dao.listStudents().stream().map(AcademicMapper::toStudentVO).toList();
+        return dao.listStudents();
     }
 
     public StudentVO getStudent(Long id) {
-        return AcademicMapper.toStudentVO(requireStudentMap(id));
+        return requireStudent(id);
     }
 
     public StudentVO getStudentByUserId(Long userId) {
-        Map<String, Object> student = dao.findStudentByUserId(requiredId(userId, "用户ID不能为空"));
+        StudentVO student = dao.findStudentByUserId(requiredId(userId, "User id is required"));
         if (student == null) {
-            throw new RuntimeException("当前用户未绑定学生档案");
+            throw new RuntimeException("Current user is not bound to a student");
         }
-        return AcademicMapper.toStudentVO(student);
+        return student;
     }
 
     @Transactional
     public void createStudent(StudentRequest request) {
-        Map<String, Object> student = AcademicMapper.toMap(request);
-        Long userId = resolveUserId(student, "STUDENT");
-        student.put("userId", userId);
-        validateStudent(student);
-        if (dao.countStudentNo(text(student.get("studentNo")), null) > 0) {
-            throw new RuntimeException("学号已存在");
+        Long userId = resolveUserId(request.userId(), request.account(), "STUDENT");
+        validateStudent(request, userId);
+        if (dao.countStudentNo(request.studentNo(), null) > 0) {
+            throw new RuntimeException("Student number already exists");
         }
-        if (dao.insertStudent(student) != 1) {
-            throw new RuntimeException("新增学生失败");
+        if (dao.insertStudent(userId, request) != 1) {
+            throw new RuntimeException("Failed to create student");
         }
     }
 
     @Transactional
     public void updateStudent(Long id, StudentRequest request) {
-        requireStudentMap(id);
-        Map<String, Object> student = AcademicMapper.toMap(request);
-        Long userId = resolveUserId(student, "STUDENT");
-        student.put("userId", userId);
-        validateStudent(student);
-        if (dao.countStudentNo(text(student.get("studentNo")), id) > 0) {
-            throw new RuntimeException("学号已存在");
+        requireStudent(id);
+        Long userId = resolveUserId(request.userId(), request.account(), "STUDENT");
+        validateStudent(request, userId);
+        if (dao.countStudentNo(request.studentNo(), id) > 0) {
+            throw new RuntimeException("Student number already exists");
         }
-        if (dao.updateStudent(id, student) != 1) {
-            throw new RuntimeException("修改学生失败");
+        if (dao.updateStudent(id, userId, request) != 1) {
+            throw new RuntimeException("Failed to update student");
         }
     }
 
     public void deleteStudent(Long id) {
-        requireStudentMap(id);
+        requireStudent(id);
         if (dao.disableStudent(id) != 1) {
-            throw new RuntimeException("停用学生失败");
+            throw new RuntimeException("Failed to disable student");
         }
     }
 
     public List<TeacherVO> listTeachers() {
-        return dao.listTeachers().stream().map(AcademicMapper::toTeacherVO).toList();
+        return dao.listTeachers();
     }
 
     public TeacherVO getTeacher(Long id) {
-        return AcademicMapper.toTeacherVO(requireTeacherMap(id));
+        return requireTeacher(id);
     }
 
     public TeacherVO getTeacherByUserId(Long userId) {
-        Map<String, Object> teacher = dao.findTeacherByUserId(requiredId(userId, "用户ID不能为空"));
+        TeacherVO teacher = dao.findTeacherByUserId(requiredId(userId, "User id is required"));
         if (teacher == null) {
-            throw new RuntimeException("当前用户未绑定教师档案");
+            throw new RuntimeException("Current user is not bound to a teacher");
         }
-        return AcademicMapper.toTeacherVO(teacher);
+        return teacher;
     }
 
     @Transactional
     public void createTeacher(TeacherRequest request) {
-        Map<String, Object> teacher = AcademicMapper.toMap(request);
-        Long userId = resolveUserId(teacher, "TEACHER");
-        teacher.put("userId", userId);
-        validateTeacher(teacher);
-        if (dao.countTeacherNo(text(teacher.get("teacherNo")), null) > 0) {
-            throw new RuntimeException("工号已存在");
+        Long userId = resolveUserId(request.userId(), request.account(), "TEACHER");
+        validateTeacher(request, userId);
+        if (dao.countTeacherNo(request.teacherNo(), null) > 0) {
+            throw new RuntimeException("Teacher number already exists");
         }
-        if (dao.insertTeacher(teacher) != 1) {
-            throw new RuntimeException("新增教师失败");
+        if (dao.insertTeacher(userId, request) != 1) {
+            throw new RuntimeException("Failed to create teacher");
         }
     }
 
     @Transactional
     public void updateTeacher(Long id, TeacherRequest request) {
-        requireTeacherMap(id);
-        Map<String, Object> teacher = AcademicMapper.toMap(request);
-        Long userId = resolveUserId(teacher, "TEACHER");
-        teacher.put("userId", userId);
-        validateTeacher(teacher);
-        if (dao.countTeacherNo(text(teacher.get("teacherNo")), id) > 0) {
-            throw new RuntimeException("工号已存在");
+        requireTeacher(id);
+        Long userId = resolveUserId(request.userId(), request.account(), "TEACHER");
+        validateTeacher(request, userId);
+        if (dao.countTeacherNo(request.teacherNo(), id) > 0) {
+            throw new RuntimeException("Teacher number already exists");
         }
-        if (dao.updateTeacher(id, teacher) != 1) {
-            throw new RuntimeException("修改教师失败");
+        if (dao.updateTeacher(id, userId, request) != 1) {
+            throw new RuntimeException("Failed to update teacher");
         }
     }
 
     public void deleteTeacher(Long id) {
-        requireTeacherMap(id);
+        requireTeacher(id);
         if (dao.disableTeacher(id) != 1) {
-            throw new RuntimeException("停用教师失败");
+            throw new RuntimeException("Failed to disable teacher");
         }
     }
 
     public List<TeachingTaskVO> listTeachingTasks(Long teacherId) {
-        return dao.listTeachingTasks(teacherId).stream().map(AcademicMapper::toTeachingTaskVO).toList();
+        return dao.listTeachingTasks(teacherId);
     }
 
     public TeachingTaskVO getTeachingTask(Long id) {
-        return AcademicMapper.toTeachingTaskVO(requireTeachingTaskMap(id));
+        return requireTeachingTask(id);
     }
 
     public void createTeachingTask(TeachingTaskRequest request) {
-        Map<String, Object> task = AcademicMapper.toMap(request);
-        validateTeachingTask(task);
-        if (dao.countTeachingConflict(task, null) > 0) {
-            throw new RuntimeException("教师该时间已有任课安排");
+        validateTeachingTask(request);
+        if (dao.countTeachingConflict(request, null) > 0) {
+            throw new RuntimeException("Teacher has a time conflict");
         }
-        if (dao.insertTeachingTask(task) != 1) {
-            throw new RuntimeException("新增任课安排失败");
+        if (dao.insertTeachingTask(request) != 1) {
+            throw new RuntimeException("Failed to create teaching task");
         }
     }
 
     public void updateTeachingTask(Long id, TeachingTaskRequest request) {
-        requireTeachingTaskMap(id);
-        Map<String, Object> task = AcademicMapper.toMap(request);
-        validateTeachingTask(task);
-        if (dao.countTeachingConflict(task, id) > 0) {
-            throw new RuntimeException("教师该时间已有任课安排");
+        requireTeachingTask(id);
+        validateTeachingTask(request);
+        if (dao.countTeachingConflict(request, id) > 0) {
+            throw new RuntimeException("Teacher has a time conflict");
         }
-        if (dao.updateTeachingTask(id, task) != 1) {
-            throw new RuntimeException("修改任课安排失败");
+        if (dao.updateTeachingTask(id, request) != 1) {
+            throw new RuntimeException("Failed to update teaching task");
         }
     }
 
     public void deleteTeachingTask(Long id) {
-        requireTeachingTaskMap(id);
+        requireTeachingTask(id);
         if (dao.disableTeachingTask(id) != 1) {
-            throw new RuntimeException("停用任课安排失败");
+            throw new RuntimeException("Failed to disable teaching task");
         }
     }
 
     public List<StudentCourseVO> listStudentCourses(Long studentId, Long teacherId) {
-        return dao.listStudentCourses(studentId, teacherId).stream().map(AcademicMapper::toStudentCourseVO).toList();
+        return dao.listStudentCourses(studentId, teacherId);
     }
 
     public List<SelectableTaskVO> listSelectableTasks(Long studentId, String semester) {
-        requiredId(studentId, "学生ID不能为空");
+        requiredId(studentId, "Student id is required");
         if (isBlank(semester)) {
-            throw new RuntimeException("学期不能为空");
+            throw new RuntimeException("Semester is required");
         }
-        return dao.listSelectableTasks(studentId, semester).stream().map(AcademicMapper::toSelectableTaskVO).toList();
+        return dao.listSelectableTasks(studentId, semester);
     }
 
     @Transactional
     public Long selectCourse(StudentCourseSelectRequest request) {
-        Long studentId = requiredId(request.studentId(), "学生ID不能为空");
-        Long teachingTaskId = requiredId(request.teachingTaskId(), "任课ID不能为空");
-        Map<String, Object> task = requireTeachingTaskMap(teachingTaskId);
-        int capacity = intValue(task.get("capacity"));
-        int selectedCount = intValue(task.get("selectedCount"));
-        if (selectedCount >= capacity) {
-            throw new RuntimeException("课程容量已满");
+        Long studentId = requiredId(request.studentId(), "Student id is required");
+        Long teachingTaskId = requiredId(request.teachingTaskId(), "Teaching task id is required");
+        TeachingTaskVO task = requireTeachingTask(teachingTaskId);
+        if (task.selectedCount() >= task.capacity()) {
+            throw new RuntimeException("Course capacity is full");
         }
-        Map<String, Object> existed = dao.findStudentCourseByStudentAndTask(studentId, teachingTaskId);
-        if (existed != null && intValue(existed.get("status")) == 1) {
-            throw new RuntimeException("不能重复选课");
+        AcademicBusinessDao.StudentCourseStatus existed = dao.findStudentCourseByStudentAndTask(studentId, teachingTaskId);
+        if (existed != null && existed.status() == 1) {
+            throw new RuntimeException("Course cannot be selected repeatedly");
         }
         if (hasCourseTime(task) && dao.countStudentCourseTimeConflict(
-                studentId, text(task.get("semester")), task.get("weekday"),
-                task.get("startSection"), task.get("endSection")) > 0) {
-            throw new BusinessException("该时间段已有已选课程，不能重复选课");
+                studentId, task.semester(), task.weekday(), task.startSection(), task.endSection()) > 0) {
+            throw new BusinessException("Selected course has a time conflict");
         }
         if (existed == null) {
             dao.insertStudentCourse(studentId, teachingTaskId);
         } else {
-            dao.reactivateStudentCourse(longValue(existed.get("id")));
+            dao.reactivateStudentCourse(existed.id());
         }
         dao.updateSelectedCount(teachingTaskId, 1);
-        return longValue(dao.findStudentCourseByStudentAndTask(studentId, teachingTaskId).get("id"));
+        return dao.findStudentCourseByStudentAndTask(studentId, teachingTaskId).id();
     }
 
     @Transactional
     public void dropCourse(Long studentCourseId) {
-        Map<String, Object> record = dao.findStudentCourseById(requiredId(studentCourseId, "选课ID不能为空"));
-        if (record == null || intValue(record.get("status")) != 1) {
-            throw new RuntimeException("选课记录不存在");
+        AcademicBusinessDao.StudentCourseDropRecord record = dao.findStudentCourseById(requiredId(studentCourseId, "Student course id is required"));
+        if (record == null || record.status() != 1) {
+            throw new RuntimeException("Student course record does not exist");
         }
         if (dao.disableStudentCourse(studentCourseId) != 1) {
-            throw new RuntimeException("退课失败");
+            throw new RuntimeException("Failed to drop course");
         }
-        dao.updateSelectedCount(longValue(record.get("teachingTaskId")), -1);
+        dao.updateSelectedCount(record.teachingTaskId(), -1);
     }
 
     public void updateScore(Long id, ScoreUpdateRequest request) {
         BigDecimal score = request.score();
         if (score.compareTo(BigDecimal.ZERO) < 0 || score.compareTo(new BigDecimal("100")) > 0) {
-            throw new RuntimeException("成绩必须在0到100之间");
+            throw new RuntimeException("Score must be between 0 and 100");
         }
-        if (dao.updateScore(requiredId(id, "选课ID不能为空"), score, request.remark()) != 1) {
-            throw new RuntimeException("成绩录入失败");
+        if (dao.updateScore(requiredId(id, "Student course id is required"), score, request.remark()) != 1) {
+            throw new RuntimeException("Failed to update score");
         }
     }
 
     public List<TeacherStudentVO> listTeacherStudents() {
-        return dao.listTeacherStudents().stream().map(AcademicMapper::toTeacherStudentVO).toList();
+        return dao.listTeacherStudents();
     }
 
     public void createTeacherStudent(TeacherStudentRequest request) {
-        Map<String, Object> relation = AcademicMapper.toMap(request);
-        validateTeacherStudent(relation);
-        if (dao.insertTeacherStudent(relation) != 1) {
-            throw new RuntimeException("新增指导关系失败");
+        validateTeacherStudent(request);
+        if (dao.insertTeacherStudent(request) != 1) {
+            throw new RuntimeException("Failed to create teacher-student relation");
         }
     }
 
     public void updateTeacherStudent(Long id, TeacherStudentRequest request) {
-        requiredId(id, "指导关系ID不能为空");
-        Map<String, Object> relation = AcademicMapper.toMap(request);
-        validateTeacherStudent(relation);
-        if (dao.updateTeacherStudent(id, relation) != 1) {
-            throw new RuntimeException("修改指导关系失败");
+        requiredId(id, "Relation id is required");
+        validateTeacherStudent(request);
+        if (dao.updateTeacherStudent(id, request) != 1) {
+            throw new RuntimeException("Failed to update teacher-student relation");
         }
     }
 
     public void deleteTeacherStudent(Long id) {
-        requiredId(id, "指导关系ID不能为空");
+        requiredId(id, "Relation id is required");
         if (dao.disableTeacherStudent(id) != 1) {
-            throw new RuntimeException("停用指导关系失败");
+            throw new RuntimeException("Failed to disable teacher-student relation");
         }
     }
 
     public OverviewReportVO overviewReport() {
-        Map<String, Object> report = dao.overviewReport();
-        return new OverviewReportVO(intValue(report.get("studentCount")), intValue(report.get("teacherCount")),
-                intValue(report.get("courseCount")), intValue(report.get("teachingTaskCount")),
-                intValue(report.get("selectionCount")));
+        return dao.overviewReport();
     }
 
     public List<NameValueReportVO> collegeStudentReport() {
-        return dao.collegeStudentReport().stream()
-                .map(item -> new NameValueReportVO(text(item.get("name")), intValue(item.get("value"))))
-                .toList();
+        return dao.collegeStudentReport();
     }
 
     public List<NameValueReportVO> gradeDistributionReport() {
-        return dao.gradeDistributionReport().stream()
-                .map(item -> new NameValueReportVO(text(item.get("name")), intValue(item.get("value"))))
-                .toList();
+        return dao.gradeDistributionReport();
     }
 
     public List<TeachingLoadReportVO> teachingLoadReport() {
-        return dao.teachingLoadReport().stream()
-                .map(item -> new TeachingLoadReportVO(text(item.get("teacherName")), intValue(item.get("taskCount")),
-                        intValue(item.get("selectedCount"))))
-                .toList();
+        return dao.teachingLoadReport();
     }
 
-    private Map<String, Object> requireUserMap(Long id) {
-        Map<String, Object> user = dao.findUserById(requiredId(id, "用户ID不能为空"));
+    private SysUserVO requireUser(Long id) {
+        SysUserVO user = dao.findUserById(requiredId(id, "User id is required"));
         if (user == null) {
-            throw new RuntimeException("用户不存在");
+            throw new RuntimeException("User does not exist");
         }
         return user;
     }
 
-    private Map<String, Object> requireStudentMap(Long id) {
-        Map<String, Object> student = dao.findStudentById(requiredId(id, "学生ID不能为空"));
+    private StudentVO requireStudent(Long id) {
+        StudentVO student = dao.findStudentById(requiredId(id, "Student id is required"));
         if (student == null) {
-            throw new RuntimeException("学生不存在");
+            throw new RuntimeException("Student does not exist");
         }
         return student;
     }
 
-    private Map<String, Object> requireTeacherMap(Long id) {
-        Map<String, Object> teacher = dao.findTeacherById(requiredId(id, "教师ID不能为空"));
+    private TeacherVO requireTeacher(Long id) {
+        TeacherVO teacher = dao.findTeacherById(requiredId(id, "Teacher id is required"));
         if (teacher == null) {
-            throw new RuntimeException("教师不存在");
+            throw new RuntimeException("Teacher does not exist");
         }
         return teacher;
     }
 
-    private Map<String, Object> requireTeachingTaskMap(Long id) {
-        Map<String, Object> task = dao.findTeachingTaskById(requiredId(id, "任课ID不能为空"));
+    private TeachingTaskVO requireTeachingTask(Long id) {
+        TeachingTaskVO task = dao.findTeachingTaskById(requiredId(id, "Teaching task id is required"));
         if (task == null) {
-            throw new RuntimeException("任课安排不存在");
+            throw new RuntimeException("Teaching task does not exist");
         }
         return task;
     }
 
-    private Long createUser(Map<String, Object> user) {
+    private Long insertUser(SysUserRequest user) {
         validateUser(user, null);
-        if (dao.countUsername(text(user.get("username")), null) > 0) {
-            throw new RuntimeException("用户名已存在");
+        if (dao.countUsername(user.username(), null) > 0) {
+            throw new RuntimeException("Username already exists");
         }
         Long userId = dao.insertUser(user);
         if (userId == null) {
-            throw new RuntimeException("新增用户失败");
+            throw new RuntimeException("Failed to create user");
         }
         return userId;
     }
 
-    private void validateUser(Map<String, Object> user, Long id) {
-        if (isBlank(user.get("username"))) {
-            throw new RuntimeException("用户名不能为空");
+    private void validateLogin(String username, String password, String role) {
+        if (isBlank(username) || isBlank(password) || isBlank(role)) {
+            throw new RuntimeException("Username, password and role are required");
         }
-        if (id == null && isBlank(user.get("password"))) {
-            throw new RuntimeException("密码不能为空");
-        }
-        String role = text(user.get("role"));
-        if (!List.of("ADMIN", "TEACHER", "STUDENT").contains(role)) {
-            throw new RuntimeException("角色不合法");
-        }
-        if (!isBlank(user.get("status"))) {
-            int status = intValue(user.get("status"));
-            if (status != 0 && status != 1) {
-                throw new RuntimeException("账号状态不合法");
-            }
+        if (!isValidRole(role)) {
+            throw new RuntimeException("Invalid role");
         }
     }
 
-    private void validateStudent(Map<String, Object> student) {
-        requiredId(longValue(student.get("userId")), "用户ID不能为空");
-        requiredId(longValue(student.get("classId")), "班级ID不能为空");
-        if (isBlank(student.get("studentNo")) || isBlank(student.get("studentName"))
-                || student.get("enrollmentYear") == null) {
-            throw new RuntimeException("学生必填字段不能为空");
+    private void validateUser(SysUserRequest user, Long id) {
+        if (user == null || isBlank(user.username())) {
+            throw new RuntimeException("Username is required");
+        }
+        if (id == null && isBlank(user.password())) {
+            throw new RuntimeException("Password is required");
+        }
+        if (!isValidRole(user.role())) {
+            throw new RuntimeException("Invalid role");
+        }
+        if (user.status() != null && user.status() != 0 && user.status() != 1) {
+            throw new RuntimeException("Invalid account status");
         }
     }
 
-    private void validateTeacher(Map<String, Object> teacher) {
-        requiredId(longValue(teacher.get("userId")), "用户ID不能为空");
-        requiredId(longValue(teacher.get("departmentId")), "教研室ID不能为空");
-        if (isBlank(teacher.get("teacherNo")) || isBlank(teacher.get("teacherName"))) {
-            throw new RuntimeException("教师必填字段不能为空");
+    private void validateStudent(StudentRequest student, Long userId) {
+        requiredId(userId, "User id is required");
+        requiredId(student.classId(), "Class id is required");
+        if (isBlank(student.studentNo()) || isBlank(student.studentName()) || student.enrollmentYear() == null) {
+            throw new RuntimeException("Required student fields are missing");
         }
     }
 
-    private void validateTeachingTask(Map<String, Object> task) {
-        requiredId(longValue(task.get("courseId")), "课程ID不能为空");
-        requiredId(longValue(task.get("teacherId")), "教师ID不能为空");
-        if (isBlank(task.get("semester"))) {
-            throw new RuntimeException("学期不能为空");
-        }
-        if (task.get("weekday") == null || task.get("startSection") == null || task.get("endSection") == null) {
-            throw new RuntimeException("上课时间不能为空");
-        }
-        if (intValue(task.get("startSection")) > intValue(task.get("endSection"))) {
-            throw new RuntimeException("开始节次不能晚于结束节次");
+    private void validateTeacher(TeacherRequest teacher, Long userId) {
+        requiredId(userId, "User id is required");
+        requiredId(teacher.departmentId(), "Department id is required");
+        if (isBlank(teacher.teacherNo()) || isBlank(teacher.teacherName())) {
+            throw new RuntimeException("Required teacher fields are missing");
         }
     }
 
-    private void validateTeacherStudent(Map<String, Object> relation) {
-        requiredId(longValue(relation.get("teacherId")), "教师ID不能为空");
-        requiredId(longValue(relation.get("studentId")), "学生ID不能为空");
-        if (isBlank(relation.get("guideType"))) {
-            throw new RuntimeException("指导类型不能为空");
+    private void validateTeachingTask(TeachingTaskRequest task) {
+        requiredId(task.courseId(), "Course id is required");
+        requiredId(task.teacherId(), "Teacher id is required");
+        if (isBlank(task.semester())) {
+            throw new RuntimeException("Semester is required");
+        }
+        if (task.weekday() == null || task.startSection() == null || task.endSection() == null) {
+            throw new RuntimeException("Course time is required");
+        }
+        if (task.startSection() > task.endSection()) {
+            throw new RuntimeException("Start section cannot be later than end section");
         }
     }
 
-    private boolean hasCourseTime(Map<String, Object> task) {
-        return !isBlank(task.get("semester")) && task.get("weekday") != null
-                && task.get("startSection") != null && task.get("endSection") != null;
+    private void validateTeacherStudent(TeacherStudentRequest relation) {
+        requiredId(relation.teacherId(), "Teacher id is required");
+        requiredId(relation.studentId(), "Student id is required");
+        if (isBlank(relation.guideType())) {
+            throw new RuntimeException("Guide type is required");
+        }
     }
 
-    private Map<String, Object> fallbackUser(String username, String role) {
+    private boolean hasCourseTime(TeachingTaskVO task) {
+        return !isBlank(task.semester()) && task.weekday() != null
+                && task.startSection() != null && task.endSection() != null;
+    }
+
+    private LoginUserVO fallbackUser(String username, String role) {
         return switch (role) {
-            case "ADMIN" -> Map.of("id", 1L, "username", username, "displayName", "系统管理员", "role", "ADMIN");
-            case "TEACHER" -> Map.of("id", 2L, "username", username, "displayName", "张老师", "role", "TEACHER");
-            case "STUDENT" -> Map.of("id", 3L, "username", username, "displayName", "李同学", "role", "STUDENT");
-            default -> throw new RuntimeException("角色不合法");
+            case "ADMIN" -> new LoginUserVO(1L, username, "system admin", "ADMIN");
+            case "TEACHER" -> new LoginUserVO(2L, username, "teacher", "TEACHER");
+            case "STUDENT" -> new LoginUserVO(3L, username, "student", "STUDENT");
+            default -> throw new RuntimeException("Invalid role");
         };
     }
 
-    private Long resolveUserId(Map<String, Object> entity, String role) {
-        Long userId = longValue(entity.get("userId"));
+    private Long resolveUserId(Long userId, SysUserRequest account, String role) {
         if (userId != null) {
             return userId;
         }
-        Map<String, Object> account = mapValue(entity.get("account"));
         if (account == null) {
-            throw new RuntimeException("用户ID不能为空");
+            throw new RuntimeException("User id is required");
         }
-        account.put("role", role);
-        if (isBlank(account.get("status"))) {
-            account.put("status", 1);
-        }
-        return createUser(account);
+        return insertUser(normalizeUserRequest(account, role));
+    }
+
+    private SysUserRequest normalizeUserRequest(SysUserRequest request, String role) {
+        return new SysUserRequest(request.username(), request.password(), role, request.status() == null ? 1 : request.status());
     }
 
     private Long requiredId(Long value, String message) {
@@ -495,27 +463,11 @@ public class AcademicBusinessService {
         return value;
     }
 
-    private boolean isBlank(Object value) {
-        return value == null || value.toString().isBlank();
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
-    private String text(Object value) {
-        return value == null ? null : value.toString();
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> mapValue(Object value) {
-        if (value instanceof Map<?, ?> map) {
-            return (Map<String, Object>) map;
-        }
-        return null;
-    }
-
-    private Long longValue(Object value) {
-        return value == null ? null : Long.parseLong(value.toString());
-    }
-
-    private int intValue(Object value) {
-        return value == null ? 0 : Integer.parseInt(value.toString());
+    private boolean isValidRole(String role) {
+        return List.of("ADMIN", "TEACHER", "STUDENT").contains(role);
     }
 }

@@ -9,8 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -25,16 +23,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public Result<LoginUserVO> login(@RequestBody LoginRequest request, HttpSession session, HttpServletRequest httpRequest) {
-        Map<String, Object> loginUser = academicBusinessService.login(
+        LoginUserVO user = academicBusinessService.login(
                 request.getUsername(),
                 request.getPassword(),
                 request.getRole()
-        );
-        LoginUserVO user = new LoginUserVO(
-                Long.parseLong(loginUser.get("id").toString()),
-                loginUser.get("username").toString(),
-                loginUser.get("displayName").toString(),
-                loginUser.get("role").toString()
         );
         session.setAttribute("loginUser", user);
         operationLogService.record(httpRequest, user.getId(), "登录认证", "LOGIN", "sys_user", user.getId(), "用户登录：" + user.getUsername());
