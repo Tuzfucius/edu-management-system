@@ -19,3 +19,7 @@ export function dropCourse(id) {
 export function updateScore(id, data) {
   return request.put(`/student-courses/${id}/score`, data)
 }
+
+export function revokeScore(id) {
+  return request.delete(`/student-courses/${id}/score`)
+}

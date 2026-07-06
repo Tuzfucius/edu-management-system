@@ -2,7 +2,7 @@
   <div class="page">
     <div>
       <h1 class="page-title">课程管理</h1>
-      <div class="page-description">维护课程基础信息与本学期任课安排。</div>
+      <div class="page-description">维护课程基础信息与任课安排，停用仅影响当前课程状态。</div>
     </div>
 
     <el-tabs v-model="activeTab">
@@ -11,20 +11,43 @@
           <div class="toolbar">
             <div class="toolbar-left">
               <el-input v-model="keyword" placeholder="搜索课程编号或名称" clearable style="width: 260px" />
+              <el-tag effect="plain">本学期 {{ currentSemester }}</el-tag>
             </div>
             <el-button type="primary" @click="openCourseDialog()">新增课程</el-button>
           </div>
           <el-table v-loading="loading" :data="filteredCourses" border empty-text="暂无课程数据">
             <el-table-column prop="courseCode" label="课程编号" width="130" />
             <el-table-column prop="courseName" label="课程名称" />
-            <el-table-column prop="credit" label="学分" width="90" />
-            <el-table-column prop="totalHours" label="学时" width="90" />
-            <el-table-column prop="courseType" label="课程类型" width="120" />
-            <el-table-column prop="examType" label="考核方式" width="120" />
-            <el-table-column label="操作" width="160">
+            <el-table-column prop="credit" label="学分" width="80" />
+            <el-table-column prop="totalHours" label="学时" width="80" />
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="Number(row.status) === 1 ? 'success' : 'info'" effect="plain">
+                  {{ Number(row.status) === 1 ? '启用' : '停用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="本学期任课" width="130">
+              <template #default="{ row }">
+                <el-tag :type="row.hasCurrentSemesterTask ? 'warning' : 'success'" effect="plain">
+                  {{ row.currentSemesterTaskCount || 0 }} 个安排
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="240">
               <template #default="{ row }">
                 <el-button link type="primary" @click="openCourseDialog(row)">编辑</el-button>
-                <el-button link type="danger" @click="removeCourseRow(row)">停用</el-button>
+                <el-button
+                  v-if="Number(row.status) === 1"
+                  link
+                  type="warning"
+                  :disabled="!row.canDisableInCurrentSemester"
+                  @click="disableCourseRow(row)"
+                >
+                  停用
+                </el-button>
+                <el-button v-else link type="success" @click="enableCourseRow(row)">启用</el-button>
+                <el-button link type="danger" @click="deleteCourseRow(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -35,7 +58,8 @@
         <el-card>
           <div class="toolbar">
             <div class="toolbar-left">
-              <el-select v-model="semester" style="width: 160px">
+              <el-select v-model="semester" style="width: 180px">
+                <el-option :label="currentSemester" :value="currentSemester" />
                 <el-option label="2025-2026-1" value="2025-2026-1" />
                 <el-option label="2025-2026-2" value="2025-2026-2" />
               </el-select>
@@ -71,18 +95,8 @@
         <el-form-item label="课程名称"><el-input v-model="courseForm.courseName" /></el-form-item>
         <el-form-item label="学分"><el-input-number v-model="courseForm.credit" :min="0.5" :step="0.5" style="width: 100%" /></el-form-item>
         <el-form-item label="学时"><el-input-number v-model="courseForm.totalHours" :min="1" style="width: 100%" /></el-form-item>
-        <el-form-item label="课程类型">
-          <el-select v-model="courseForm.courseType" style="width: 100%">
-            <el-option label="必修" value="必修" />
-            <el-option label="选修" value="选修" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="考核方式">
-          <el-select v-model="courseForm.examType" style="width: 100%">
-            <el-option label="考试" value="考试" />
-            <el-option label="考查" value="考查" />
-          </el-select>
-        </el-form-item>
+        <el-form-item label="课程类型"><el-input v-model="courseForm.courseType" /></el-form-item>
+        <el-form-item label="考核方式"><el-input v-model="courseForm.examType" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="courseDialog = false">取消</el-button>
@@ -94,7 +108,7 @@
       <el-form :model="taskForm" label-width="96px">
         <el-form-item label="课程">
           <el-select v-model="taskForm.courseId" filterable style="width: 100%">
-            <el-option v-for="item in courses" :key="item.id" :label="item.courseName" :value="item.id" />
+            <el-option v-for="item in enabledCourses" :key="item.id" :label="item.courseName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="教师">
@@ -130,14 +144,16 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createCourse, listCourses, removeCourse, updateCourse } from '../../api/course'
+import { createCourse, disableCourse, enableCourse, listCourses, removeCourse, updateCourse } from '../../api/course'
 import { listTeachers } from '../../api/teacher'
 import { createTeachingTask, listTeachingTasks, removeTeachingTask, updateTeachingTask } from '../../api/teachingTask'
+import { getCurrentSemester } from '../../utils/academicMetrics'
 
 const activeTab = ref('courses')
 const keyword = ref('')
 const taskKeyword = ref('')
-const semester = ref('2025-2026-1')
+const currentSemester = getCurrentSemester()
+const semester = ref(currentSemester)
 const loading = ref(false)
 const courseDialog = ref(false)
 const taskDialog = ref(false)
@@ -147,6 +163,7 @@ const tasks = ref([])
 const courseForm = reactive({})
 const taskForm = reactive({})
 
+const enabledCourses = computed(() => courses.value.filter((item) => Number(item.status) === 1))
 const filteredCourses = computed(() => courses.value.filter((item) => !keyword.value || item.courseCode.includes(keyword.value) || item.courseName.includes(keyword.value)))
 const filteredTasks = computed(() => tasks.value.filter((item) => {
   const matchSemester = item.semester === semester.value
@@ -194,20 +211,30 @@ async function saveTask() {
   await refreshAll()
 }
 
-async function removeCourseRow(row) {
-  await confirmRemove('确定停用该课程吗？')
+async function disableCourseRow(row) {
+  await ElMessageBox.confirm('确定停用该课程吗？本学期无任课安排才允许停用。', '操作确认', { type: 'warning' })
+  await disableCourse(row.id)
+  ElMessage.success('课程已停用')
+  await refreshAll()
+}
+
+async function enableCourseRow(row) {
+  await enableCourse(row.id)
+  ElMessage.success('课程已启用')
+  await refreshAll()
+}
+
+async function deleteCourseRow(row) {
+  await ElMessageBox.confirm('确定删除该课程吗？仅无任课和选课引用的课程可删除。', '操作确认', { type: 'warning', confirmButtonText: '删除' })
   await removeCourse(row.id)
+  ElMessage.success('课程已删除')
   await refreshAll()
 }
 
 async function removeTaskRow(row) {
-  await confirmRemove('确定停用该任课安排吗？')
+  await ElMessageBox.confirm('确定停用该任课安排吗？', '操作确认', { type: 'warning' })
   await removeTeachingTask(row.id)
   await refreshAll()
-}
-
-function confirmRemove(message) {
-  return ElMessageBox.confirm(message, '操作确认', { type: 'warning', confirmButtonText: '停用', cancelButtonText: '取消' })
 }
 
 function formatTime(row) {

@@ -17,13 +17,8 @@
       <div class="toolbar">
         <div class="toolbar-left">
           <el-select v-model="taskId" clearable placeholder="选择课程" style="min-width: 280px">
-            <el-option :label="'全部课程'" :value="''" />
-            <el-option
-              v-for="item in taskOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+            <el-option label="全部课程" :value="''" />
+            <el-option v-for="item in taskOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
           <el-input v-model="keyword" placeholder="搜索学号或姓名" clearable style="width: 220px" />
         </div>
@@ -31,16 +26,12 @@
 
       <div class="content-grid">
         <el-card>
-          <template #header>
-            <span class="section-title">{{ selectedTaskLabel }}成绩分布</span>
-          </template>
+          <template #header><span class="section-title">{{ selectedTaskLabel }}成绩分布</span></template>
           <div ref="barRef" class="chart chart--wide"></div>
         </el-card>
 
         <el-card>
-          <template #header>
-            <span class="section-title">成绩录入占比</span>
-          </template>
+          <template #header><span class="section-title">成绩录入占比</span></template>
           <div ref="pieRef" class="chart chart--small"></div>
         </el-card>
       </div>
@@ -70,6 +61,7 @@ import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getTeacherByUser } from '../../api/teacher'
 import { listStudentCourses } from '../../api/studentCourse'
+import { averageScore, buildScoreBuckets, BUCKET_COLORS } from '../../utils/academicMetrics'
 import { filterRows } from '../../utils/filter'
 
 const loading = ref(false)
@@ -79,7 +71,6 @@ const taskId = ref('')
 const keyword = ref('')
 const barRef = ref(null)
 const pieRef = ref(null)
-
 let barChart = null
 let pieChart = null
 
@@ -87,22 +78,12 @@ const taskOptions = computed(() => {
   const seen = new Map()
   rows.value.forEach((row) => {
     if (!seen.has(row.teachingTaskId)) {
-      seen.set(row.teachingTaskId, {
-        value: row.teachingTaskId,
-        label: `${row.courseName} · ${row.semester}`
-      })
+      seen.set(row.teachingTaskId, { value: row.teachingTaskId, label: `${row.courseName} · ${row.semester}` })
     }
   })
   return Array.from(seen.values())
 })
-
-const selectedTaskLabel = computed(() => {
-  if (!taskId.value) {
-    return '全部课程'
-  }
-  return taskOptions.value.find((item) => String(item.value) === String(taskId.value))?.label || '全部课程'
-})
-
+const selectedTaskLabel = computed(() => taskOptions.value.find((item) => String(item.value) === String(taskId.value))?.label || '全部课程')
 const displayRows = computed(() =>
   filterRows(rows.value, {
     keyword: keyword.value,
@@ -110,32 +91,22 @@ const displayRows = computed(() =>
     predicates: [(row) => !taskId.value || String(row.teachingTaskId) === String(taskId.value)]
   })
 )
-
-const gradedRows = computed(() => displayRows.value.filter((row) => Number(row.gradeStatus) === 1))
+const gradedRows = computed(() => displayRows.value.filter((row) => Number(row.gradeStatus) === 1 && row.score !== null && row.score !== undefined))
 const pendingRows = computed(() => displayRows.value.filter((row) => Number(row.gradeStatus) !== 1))
-
 const cards = computed(() => {
-  const validScores = gradedRows.value.filter((row) => row.score !== null && row.score !== undefined)
-  const averageScore = validScores.length
-    ? (validScores.reduce((sum, row) => sum + Number(row.score), 0) / validScores.length).toFixed(1)
+  const passRate = gradedRows.value.length
+    ? `${Math.round((gradedRows.value.filter((row) => Number(row.score) >= 60).length / gradedRows.value.length) * 100)}%`
     : '-'
-  const passRate = validScores.length
-    ? `${Math.round((validScores.filter((row) => Number(row.score) >= 60).length / validScores.length) * 100)}%`
-    : '-'
-
   return [
     { title: '选课人数', value: displayRows.value.length, extra: '当前筛选课程' },
     { title: '已录成绩', value: gradedRows.value.length, extra: `未录 ${pendingRows.value.length} 人` },
-    { title: '平均分', value: averageScore, extra: '仅统计已录入成绩' },
+    { title: '平均分', value: averageScore(gradedRows.value), extra: '仅统计已录入成绩' },
     { title: '及格率', value: passRate, extra: '60 分及以上' }
   ]
 })
 
 onMounted(refresh)
-watch(displayRows, async () => {
-  await nextTick()
-  renderCharts()
-})
+watch(displayRows, () => nextTick(renderCharts), { deep: true })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   disposeCharts()
@@ -156,46 +127,18 @@ async function refresh() {
 }
 
 function renderCharts() {
-  if (!barRef.value || !pieRef.value) {
-    return
-  }
-
+  if (!barRef.value || !pieRef.value) return
   barChart = echarts.getInstanceByDom(barRef.value) || echarts.init(barRef.value)
   pieChart = echarts.getInstanceByDom(pieRef.value) || echarts.init(pieRef.value)
-
-  const bucketCounts = buildBucketCounts(displayRows.value)
+  const buckets = buildScoreBuckets(gradedRows.value)
   barChart.setOption({
-    color: ['#2563eb'],
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { left: 50, right: 20, top: 35, bottom: 45, containLabel: true },
-    xAxis: {
-      type: 'category',
-      name: '成绩区间',
-      axisLabel: { interval: 0, rotate: 15 },
-      data: ['未录入', '<60', '60-69', '70-79', '80-89', '90-100']
-    },
-    yAxis: {
-      type: 'value',
-      name: '人数'
-    },
-    series: [
-      {
-        type: 'bar',
-        barMaxWidth: 38,
-        data: [
-          bucketCounts['未录入'],
-          bucketCounts['<60'],
-          bucketCounts['60-69'],
-          bucketCounts['70-79'],
-          bucketCounts['80-89'],
-          bucketCounts['90-100']
-        ]
-      }
-    ]
+    tooltip: { trigger: 'axis' },
+    grid: { left: 44, right: 20, top: 32, bottom: 42, containLabel: true },
+    xAxis: { type: 'category', data: buckets.map((item) => item.name) },
+    yAxis: { type: 'value', name: '人数' },
+    series: [{ type: 'bar', data: buckets.map((item, index) => ({ value: item.value, itemStyle: { color: BUCKET_COLORS[index] } })) }]
   })
-
   pieChart.setOption({
-    color: ['#10b981', '#f59e0b'],
     tooltip: { trigger: 'item' },
     legend: { bottom: 0, left: 'center' },
     series: [
@@ -205,38 +148,12 @@ function renderCharts() {
         center: ['50%', '42%'],
         label: { formatter: '{b}\n{d}%' },
         data: [
-          { name: '已录入', value: gradedRows.value.length },
-          { name: '未录入', value: pendingRows.value.length }
+          { name: '已录入', value: gradedRows.value.length, itemStyle: { color: '#16a34a' } },
+          { name: '未录入', value: pendingRows.value.length, itemStyle: { color: '#f59e0b' } }
         ]
       }
     ]
   })
-}
-
-function buildBucketCounts(rowsList) {
-  const buckets = {
-    '未录入': 0,
-    '<60': 0,
-    '60-69': 0,
-    '70-79': 0,
-    '80-89': 0,
-    '90-100': 0
-  }
-
-  rowsList.forEach((row) => {
-    if (Number(row.gradeStatus) !== 1 || row.score === null || row.score === undefined) {
-      buckets['未录入'] += 1
-      return
-    }
-    const score = Number(row.score)
-    if (score >= 90) buckets['90-100'] += 1
-    else if (score >= 80) buckets['80-89'] += 1
-    else if (score >= 70) buckets['70-79'] += 1
-    else if (score >= 60) buckets['60-69'] += 1
-    else buckets['<60'] += 1
-  })
-
-  return buckets
 }
 
 function handleResize() {
@@ -251,17 +168,3 @@ function disposeCharts() {
   pieChart = null
 }
 </script>
-
-<style scoped>
-.chart {
-  width: 100%;
-}
-
-.chart--wide {
-  min-height: 280px;
-}
-
-.chart--small {
-  min-height: 280px;
-}
-</style>

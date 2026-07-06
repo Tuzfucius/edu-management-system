@@ -19,3 +19,11 @@ export function updateCourse(id, data) {
 export function removeCourse(id) {
   return request.delete(`/courses/${id}`)
 }
+
+export function disableCourse(id) {
+  return request.patch(`/courses/${id}/disable`)
+}
+
+export function enableCourse(id) {
+  return request.patch(`/courses/${id}/enable`)
+}
