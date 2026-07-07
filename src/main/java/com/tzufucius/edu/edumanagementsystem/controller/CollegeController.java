@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.dto.request.CollegeRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.CollegeVO;
 import com.tzufucius.edu.edumanagementsystem.service.CollegeService;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/colleges")
+@RequireRole("ADMIN")
 public class CollegeController {
     private final CollegeService collegeService;
 

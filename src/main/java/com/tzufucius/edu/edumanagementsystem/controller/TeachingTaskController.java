@@ -1,9 +1,12 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
+import com.tzufucius.edu.edumanagementsystem.auth.AuthContext;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.common.Result;
 import com.tzufucius.edu.edumanagementsystem.dto.request.TeachingTaskRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.TeachingTaskVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/teaching-tasks")
+@RequireRole("ADMIN")
 public class TeachingTaskController {
     private final AcademicBusinessService service;
 
@@ -19,13 +23,15 @@ public class TeachingTaskController {
     }
 
     @GetMapping
-    public Result<List<TeachingTaskVO>> list(@RequestParam(required = false) Long teacherId) {
-        return Result.success(service.listTeachingTasks(teacherId));
+    @RequireRole({"ADMIN", "TEACHER"})
+    public Result<List<TeachingTaskVO>> list(@RequestParam(required = false) Long teacherId, HttpSession session) {
+        return Result.success(service.listTeachingTasks(teacherId, AuthContext.requireCurrentUser(session)));
     }
 
     @GetMapping("/{id}")
-    public Result<TeachingTaskVO> get(@PathVariable Long id) {
-        return Result.success(service.getTeachingTask(id));
+    @RequireRole({"ADMIN", "TEACHER"})
+    public Result<TeachingTaskVO> get(@PathVariable Long id, HttpSession session) {
+        return Result.success(service.getTeachingTask(id, AuthContext.requireCurrentUser(session)));
     }
 
     @PostMapping

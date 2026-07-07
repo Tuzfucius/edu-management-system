@@ -1,5 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.service;
 
+import com.tzufucius.edu.edumanagementsystem.auth.AuthContext;
+import com.tzufucius.edu.edumanagementsystem.auth.AuthException;
 import com.tzufucius.edu.edumanagementsystem.dao.AcademicBusinessDao;
 import com.tzufucius.edu.edumanagementsystem.dto.request.ScoreUpdateRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.request.StudentCourseSelectRequest;
@@ -40,9 +42,6 @@ public class AcademicBusinessService {
         try {
             AcademicBusinessDao.LoginUserRecord user = dao.findUserForLogin(username, role);
             if (user == null) {
-                if ("123456".equals(password)) {
-                    return fallbackUser(username, role);
-                }
                 throw new RuntimeException("Password is incorrect");
             }
             if (!password.equals(user.password())) {
@@ -51,10 +50,7 @@ public class AcademicBusinessService {
             dao.updateLastLogin(user.id());
             return new LoginUserVO(user.id(), user.username(), user.displayName(), user.role());
         } catch (DataAccessException exception) {
-            if (!"123456".equals(password)) {
-                throw new RuntimeException("Password is incorrect");
-            }
-            return fallbackUser(username, role);
+            throw new RuntimeException("Login failed");
         }
     }
 
@@ -105,6 +101,11 @@ public class AcademicBusinessService {
         return student;
     }
 
+    public StudentVO getStudentByUserId(Long userId, LoginUserVO currentUser) {
+        requireOwnerOrAdmin(currentUser, requiredId(userId, "User id is required"));
+        return getStudentByUserId(userId);
+    }
+
     @Transactional
     public void createStudent(StudentRequest request) {
         Long userId = resolveUserId(request.userId(), request.account(), "STUDENT");
@@ -153,6 +154,11 @@ public class AcademicBusinessService {
         return teacher;
     }
 
+    public TeacherVO getTeacherByUserId(Long userId, LoginUserVO currentUser) {
+        requireOwnerOrAdmin(currentUser, requiredId(userId, "User id is required"));
+        return getTeacherByUserId(userId);
+    }
+
     @Transactional
     public void createTeacher(TeacherRequest request) {
         Long userId = resolveUserId(request.userId(), request.account(), "TEACHER");
@@ -189,8 +195,32 @@ public class AcademicBusinessService {
         return dao.listTeachingTasks(teacherId);
     }
 
+    public List<TeachingTaskVO> listTeachingTasks(Long teacherId, LoginUserVO currentUser) {
+        if (AuthContext.hasAnyRole(currentUser, "ADMIN")) {
+            return listTeachingTasks(teacherId);
+        }
+        AuthContext.requireAnyRole(currentUser, "TEACHER");
+        Long currentTeacherId = currentTeacher(currentUser).id();
+        if (teacherId != null && !teacherId.equals(currentTeacherId)) {
+            throw new AuthException(403, "只能访问自己的任课安排");
+        }
+        return listTeachingTasks(currentTeacherId);
+    }
+
     public TeachingTaskVO getTeachingTask(Long id) {
         return requireTeachingTask(id);
+    }
+
+    public TeachingTaskVO getTeachingTask(Long id, LoginUserVO currentUser) {
+        TeachingTaskVO task = requireTeachingTask(id);
+        if (AuthContext.hasAnyRole(currentUser, "ADMIN")) {
+            return task;
+        }
+        AuthContext.requireAnyRole(currentUser, "TEACHER");
+        if (!task.teacherId().equals(currentTeacher(currentUser).id())) {
+            throw new AuthException(403, "只能访问自己的任课安排");
+        }
+        return task;
     }
 
     public void createTeachingTask(TeachingTaskRequest request) {
@@ -225,12 +255,43 @@ public class AcademicBusinessService {
         return dao.listStudentCourses(studentId, teacherId);
     }
 
+    public List<StudentCourseVO> listStudentCourses(Long studentId, Long teacherId, LoginUserVO currentUser) {
+        if (AuthContext.hasAnyRole(currentUser, "ADMIN")) {
+            return listStudentCourses(studentId, teacherId);
+        }
+        if (AuthContext.hasAnyRole(currentUser, "STUDENT")) {
+            Long currentStudentId = currentStudent(currentUser).id();
+            if (studentId != null && !studentId.equals(currentStudentId)) {
+                throw new AuthException(403, "只能访问自己的选课记录");
+            }
+            return listStudentCourses(currentStudentId, null);
+        }
+        AuthContext.requireAnyRole(currentUser, "TEACHER");
+        Long currentTeacherId = currentTeacher(currentUser).id();
+        if (teacherId != null && !teacherId.equals(currentTeacherId)) {
+            throw new AuthException(403, "只能访问自己的任课学生");
+        }
+        return listStudentCourses(null, currentTeacherId);
+    }
+
     public List<SelectableTaskVO> listSelectableTasks(Long studentId, String semester) {
         requiredId(studentId, "Student id is required");
         if (isBlank(semester)) {
             throw new RuntimeException("Semester is required");
         }
         return dao.listSelectableTasks(studentId, semester);
+    }
+
+    public List<SelectableTaskVO> listSelectableTasks(Long studentId, String semester, LoginUserVO currentUser) {
+        if (AuthContext.hasAnyRole(currentUser, "ADMIN")) {
+            return listSelectableTasks(studentId, semester);
+        }
+        AuthContext.requireAnyRole(currentUser, "STUDENT");
+        Long currentStudentId = currentStudent(currentUser).id();
+        if (studentId != null && !studentId.equals(currentStudentId)) {
+            throw new AuthException(403, "只能访问自己的可选课程");
+        }
+        return listSelectableTasks(currentStudentId, semester);
     }
 
     @Transactional
@@ -258,6 +319,15 @@ public class AcademicBusinessService {
         return dao.findStudentCourseByStudentAndTask(studentId, teachingTaskId).id();
     }
 
+    public Long selectCourse(StudentCourseSelectRequest request, LoginUserVO currentUser) {
+        AuthContext.requireAnyRole(currentUser, "STUDENT");
+        Long currentStudentId = currentStudent(currentUser).id();
+        if (request.studentId() != null && !request.studentId().equals(currentStudentId)) {
+            throw new AuthException(403, "只能为自己选课");
+        }
+        return selectCourse(new StudentCourseSelectRequest(currentStudentId, request.teachingTaskId()));
+    }
+
     @Transactional
     public void dropCourse(Long studentCourseId) {
         AcademicBusinessDao.StudentCourseDropRecord record = dao.findStudentCourseById(requiredId(studentCourseId, "Student course id is required"));
@@ -273,6 +343,17 @@ public class AcademicBusinessService {
         dao.updateSelectedCount(record.teachingTaskId(), -1);
     }
 
+    public void dropCourse(Long studentCourseId, LoginUserVO currentUser) {
+        AcademicBusinessDao.StudentCourseDropRecord record = requireStudentCourseRecord(studentCourseId);
+        if (AuthContext.hasAnyRole(currentUser, "STUDENT") && !record.studentId().equals(currentStudent(currentUser).id())) {
+            throw new AuthException(403, "只能退选自己的课程");
+        }
+        if (!AuthContext.hasAnyRole(currentUser, "ADMIN", "STUDENT")) {
+            throw new AuthException(403, "无权退课");
+        }
+        dropCourse(studentCourseId);
+    }
+
     public void updateScore(Long id, ScoreUpdateRequest request) {
         BigDecimal score = request.score();
         if (score.compareTo(BigDecimal.ZERO) < 0 || score.compareTo(new BigDecimal("100")) > 0) {
@@ -283,10 +364,20 @@ public class AcademicBusinessService {
         }
     }
 
+    public void updateScore(Long id, ScoreUpdateRequest request, LoginUserVO currentUser) {
+        requireScorePermission(id, currentUser);
+        updateScore(id, request);
+    }
+
     public void revokeScore(Long id) {
         if (dao.revokeScore(requiredId(id, "Student course id is required")) != 1) {
             throw new RuntimeException("Failed to revoke score");
         }
+    }
+
+    public void revokeScore(Long id, LoginUserVO currentUser) {
+        requireScorePermission(id, currentUser);
+        revokeScore(id);
     }
 
     public List<TeacherStudentVO> listTeacherStudents() {
@@ -445,15 +536,6 @@ public class AcademicBusinessService {
                 && task.startSection() != null && task.endSection() != null;
     }
 
-    private LoginUserVO fallbackUser(String username, String role) {
-        return switch (role) {
-            case "ADMIN" -> new LoginUserVO(1L, username, "system admin", "ADMIN");
-            case "TEACHER" -> new LoginUserVO(2L, username, "teacher", "TEACHER");
-            case "STUDENT" -> new LoginUserVO(3L, username, "student", "STUDENT");
-            default -> throw new RuntimeException("Invalid role");
-        };
-    }
-
     private Long resolveUserId(Long userId, SysUserRequest account, String role) {
         if (userId != null) {
             return userId;
@@ -481,5 +563,45 @@ public class AcademicBusinessService {
 
     private boolean isValidRole(String role) {
         return List.of("ADMIN", "TEACHER", "STUDENT").contains(role);
+    }
+
+    private void requireOwnerOrAdmin(LoginUserVO currentUser, Long userId) {
+        if (AuthContext.hasAnyRole(currentUser, "ADMIN")) {
+            return;
+        }
+        if (currentUser == null || !userId.equals(currentUser.getId())) {
+            throw new AuthException(403, "只能访问自己的绑定信息");
+        }
+    }
+
+    private StudentVO currentStudent(LoginUserVO currentUser) {
+        AuthContext.requireAnyRole(currentUser, "STUDENT");
+        return getStudentByUserId(currentUser.getId());
+    }
+
+    private TeacherVO currentTeacher(LoginUserVO currentUser) {
+        AuthContext.requireAnyRole(currentUser, "TEACHER");
+        return getTeacherByUserId(currentUser.getId());
+    }
+
+    private AcademicBusinessDao.StudentCourseDropRecord requireStudentCourseRecord(Long studentCourseId) {
+        AcademicBusinessDao.StudentCourseDropRecord record = dao.findStudentCourseById(requiredId(studentCourseId, "Student course id is required"));
+        if (record == null || record.status() != 1) {
+            throw new RuntimeException("Student course record does not exist");
+        }
+        return record;
+    }
+
+    private void requireScorePermission(Long studentCourseId, LoginUserVO currentUser) {
+        if (AuthContext.hasAnyRole(currentUser, "ADMIN")) {
+            requireStudentCourseRecord(studentCourseId);
+            return;
+        }
+        AuthContext.requireAnyRole(currentUser, "TEACHER");
+        AcademicBusinessDao.StudentCourseDropRecord record = requireStudentCourseRecord(studentCourseId);
+        TeachingTaskVO task = requireTeachingTask(record.teachingTaskId());
+        if (!task.teacherId().equals(currentTeacher(currentUser).id())) {
+            throw new AuthException(403, "只能维护自己任课课程的成绩");
+        }
     }
 }

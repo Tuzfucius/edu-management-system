@@ -2,6 +2,7 @@ package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.PageResult;
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.OperationLogVO;
 import com.tzufucius.edu.edumanagementsystem.service.OperationLogService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/operation-logs")
+@RequireRole("ADMIN")
 public class OperationLogController {
     private final OperationLogService operationLogService;
 

@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.dto.request.ClassInfoRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.ClassInfoVO;
 import com.tzufucius.edu.edumanagementsystem.service.ClassInfoService;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/classes")
+@RequireRole("ADMIN")
 public class ClassInfoController {
     private final ClassInfoService classInfoService;
 

@@ -3,6 +3,7 @@ package com.tzufucius.edu.edumanagementsystem.exception;
 import com.tzufucius.edu.edumanagementsystem.auth.AuthException;
 import com.tzufucius.edu.edumanagementsystem.common.Result;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -27,8 +28,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthException.class)
-    public Result<Void> handleAuthException(AuthException exception, HttpServletRequest request) {
+    public Result<Void> handleAuthException(AuthException exception, HttpServletRequest request, HttpServletResponse response) {
         log.warn("权限校验失败 requestId={} uri={} code={} message={}", requestId(), request.getRequestURI(), exception.getCode(), exception.getMessage());
+        response.setStatus(exception.getCode());
         return new Result<>(exception.getCode(), exception.getMessage(), null);
     }
 

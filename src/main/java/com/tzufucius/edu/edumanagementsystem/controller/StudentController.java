@@ -1,5 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
+import com.tzufucius.edu.edumanagementsystem.auth.AuthContext;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.common.Result;
 import com.tzufucius.edu.edumanagementsystem.dto.request.StudentRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.StudentVO;
@@ -14,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/students")
+@RequireRole("ADMIN")
 public class StudentController {
     private final AcademicBusinessService service;
     private final OperationLogService operationLogService;
@@ -34,8 +37,9 @@ public class StudentController {
     }
 
     @GetMapping("/by-user/{userId}")
-    public Result<StudentVO> getByUser(@PathVariable Long userId) {
-        return Result.success(service.getStudentByUserId(userId));
+    @RequireRole({"ADMIN", "STUDENT"})
+    public Result<StudentVO> getByUser(@PathVariable Long userId, HttpSession session) {
+        return Result.success(service.getStudentByUserId(userId, AuthContext.requireCurrentUser(session)));
     }
 
     @PostMapping

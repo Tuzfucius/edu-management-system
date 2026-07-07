@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.NameValueReportVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.OverviewReportVO;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.TeachingLoadReportVO;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reports")
+@RequireRole("ADMIN")
 public class ReportController {
     private final AcademicBusinessService service;
 

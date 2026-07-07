@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.dto.request.CourseRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.CourseVO;
 import com.tzufucius.edu.edumanagementsystem.service.CourseService;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/courses")
+@RequireRole("ADMIN")
 public class CourseController {
     private final CourseService courseService;
     private final OperationLogService operationLogService;

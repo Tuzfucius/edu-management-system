@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.dto.request.DepartmentRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.DepartmentVO;
 import com.tzufucius.edu.edumanagementsystem.service.DepartmentService;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/departments")
+@RequireRole("ADMIN")
 public class DepartmentController {
     private final DepartmentService departmentService;
 

@@ -1,6 +1,7 @@
 package com.tzufucius.edu.edumanagementsystem.controller;
 
 import com.tzufucius.edu.edumanagementsystem.common.Result;
+import com.tzufucius.edu.edumanagementsystem.auth.RequireRole;
 import com.tzufucius.edu.edumanagementsystem.dto.request.SysUserRequest;
 import com.tzufucius.edu.edumanagementsystem.dto.vo.SysUserVO;
 import com.tzufucius.edu.edumanagementsystem.service.AcademicBusinessService;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@RequireRole("ADMIN")
 public class SysUserController {
     private final AcademicBusinessService service;
     private final OperationLogService operationLogService;
