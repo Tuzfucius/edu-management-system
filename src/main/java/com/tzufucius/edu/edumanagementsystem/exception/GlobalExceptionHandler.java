@@ -1,5 +1,6 @@
 package com.tzufucius.edu.edumanagementsystem.exception;
 
+import com.tzufucius.edu.edumanagementsystem.auth.AuthException;
 import com.tzufucius.edu.edumanagementsystem.common.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -22,6 +23,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public Result<Void> handleBusinessException(BusinessException exception, HttpServletRequest request) {
         log.warn("业务异常 requestId={} uri={} message={}", requestId(), request.getRequestURI(), exception.getMessage());
+        return new Result<>(exception.getCode(), exception.getMessage(), null);
+    }
+
+    @ExceptionHandler(AuthException.class)
+    public Result<Void> handleAuthException(AuthException exception, HttpServletRequest request) {
+        log.warn("权限校验失败 requestId={} uri={} code={} message={}", requestId(), request.getRequestURI(), exception.getCode(), exception.getMessage());
         return new Result<>(exception.getCode(), exception.getMessage(), null);
     }
 
