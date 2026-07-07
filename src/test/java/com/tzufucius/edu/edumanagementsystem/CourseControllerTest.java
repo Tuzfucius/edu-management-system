@@ -33,26 +33,26 @@ class CourseControllerTest {
     @Test
     void listAndGetCourse() throws Exception {
         CourseVO course = create("COURSE-CTRL-GET");
-        mockMvc.perform(get("/api/courses")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(get("/api/courses/{id}", course.id()))
+        mockMvc.perform(get("/api/courses").session(TestAuth.adminSession())).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(get("/api/courses/{id}", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.courseCode").value("COURSE-CTRL-GET"));
     }
 
     @Test
     void createUpdateDeleteCourse() throws Exception {
-        mockMvc.perform(post("/api/courses")
+        mockMvc.perform(post("/api/courses").session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"courseCode\":\"COURSE-CTRL-ADD\",\"courseName\":\"Add\",\"credit\":2.5,\"totalHours\":40,\"courseType\":\"required\",\"examType\":\"exam\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
         CourseVO course = courseService.findAll().stream().filter(item -> "COURSE-CTRL-ADD".equals(item.courseCode())).findFirst().orElseThrow();
-        mockMvc.perform(put("/api/courses/{id}", course.id())
+        mockMvc.perform(put("/api/courses/{id}", course.id()).session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"courseCode\":\"COURSE-CTRL-UPD\",\"courseName\":\"Updated\",\"credit\":3,\"totalHours\":48,\"courseType\":\"required\",\"examType\":\"exam\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(delete("/api/courses/{id}", course.id()))
+        mockMvc.perform(delete("/api/courses/{id}", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
@@ -62,32 +62,32 @@ class CourseControllerTest {
         String suffix = Long.toString(System.nanoTime(), 36);
         CourseVO course = create("CST-" + suffix);
 
-        mockMvc.perform(patch("/api/courses/{id}/disable", course.id()))
+        mockMvc.perform(patch("/api/courses/{id}/disable", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(get("/api/courses/{id}", course.id()))
+        mockMvc.perform(get("/api/courses/{id}", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value(0))
                 .andExpect(jsonPath("$.data.canDisableInCurrentSemester").value(true));
 
-        mockMvc.perform(patch("/api/courses/{id}/enable", course.id()))
+        mockMvc.perform(patch("/api/courses/{id}/enable", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(get("/api/courses/{id}", course.id()))
+        mockMvc.perform(get("/api/courses/{id}", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value(1));
 
         Long teacherId = insertTeacher(suffix);
         insertTeachingTask(course.id(), teacherId, SemesterUtils.currentSemester());
 
-        mockMvc.perform(get("/api/courses/{id}", course.id()))
+        mockMvc.perform(get("/api/courses/{id}", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.hasCurrentSemesterTask").value(true))
                 .andExpect(jsonPath("$.data.canDisableInCurrentSemester").value(false));
-        mockMvc.perform(patch("/api/courses/{id}/disable", course.id()))
+        mockMvc.perform(patch("/api/courses/{id}/disable", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500));
-        mockMvc.perform(delete("/api/courses/{id}", course.id()))
+        mockMvc.perform(delete("/api/courses/{id}", course.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500));
     }

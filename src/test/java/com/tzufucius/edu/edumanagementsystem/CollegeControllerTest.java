@@ -26,20 +26,20 @@ class CollegeControllerTest {
 
     @Test
     void listColleges() throws Exception {
-        mockMvc.perform(get("/api/colleges")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(get("/api/colleges").session(TestAuth.adminSession())).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
     }
 
     @Test
     void getCollege() throws Exception {
         CollegeVO college = createCollege("CTRL-COLLEGE-GET", "Controller Get College");
-        mockMvc.perform(get("/api/colleges/{id}", college.id()))
+        mockMvc.perform(get("/api/colleges/{id}", college.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.collegeCode").value("CTRL-COLLEGE-GET"));
     }
 
     @Test
     void createCollegeSuccess() throws Exception {
-        mockMvc.perform(post("/api/colleges")
+        mockMvc.perform(post("/api/colleges").session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"collegeCode\":\"CTRL-COLLEGE-ADD\",\"collegeName\":\"Controller Add College\",\"description\":\"test\"}"))
                 .andExpect(status().isOk())
@@ -49,7 +49,7 @@ class CollegeControllerTest {
     @Test
     void updateCollegeSuccess() throws Exception {
         CollegeVO college = createCollege("CTRL-COLLEGE-UPD", "Before");
-        mockMvc.perform(put("/api/colleges/{id}", college.id())
+        mockMvc.perform(put("/api/colleges/{id}", college.id()).session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"collegeCode\":\"CTRL-COLLEGE-UPD\",\"collegeName\":\"After\",\"description\":\"updated\"}"))
                 .andExpect(status().isOk())
@@ -59,7 +59,7 @@ class CollegeControllerTest {
     @Test
     void deleteCollegeSuccess() throws Exception {
         CollegeVO college = createCollege("CTRL-COLLEGE-DEL", "Delete");
-        mockMvc.perform(delete("/api/colleges/{id}", college.id()))
+        mockMvc.perform(delete("/api/colleges/{id}", college.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

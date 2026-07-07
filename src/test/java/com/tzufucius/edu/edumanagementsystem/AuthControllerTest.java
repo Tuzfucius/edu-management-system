@@ -72,7 +72,7 @@ class AuthControllerTest {
     @Test
     void meWithoutLoginShouldUnauthorized() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isOk())
+                .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(401));
     }
 
@@ -110,7 +110,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
 
         mockMvc.perform(get("/api/auth/me").session(session))
-                .andExpect(status().isOk())
+                .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(401));
     }
 }

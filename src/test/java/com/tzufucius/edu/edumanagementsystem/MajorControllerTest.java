@@ -33,8 +33,8 @@ class MajorControllerTest {
     void listAndGetMajor() throws Exception {
         Long collegeId = createCollege("MAJ-CTRL-COL").id();
         MajorVO major = create(collegeId, "MAJ-CTRL-GET");
-        mockMvc.perform(get("/api/majors")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(get("/api/majors/{id}", major.id()))
+        mockMvc.perform(get("/api/majors").session(TestAuth.adminSession())).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(200));
+        mockMvc.perform(get("/api/majors/{id}", major.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.majorCode").value("MAJ-CTRL-GET"));
     }
@@ -42,18 +42,18 @@ class MajorControllerTest {
     @Test
     void createUpdateDeleteMajor() throws Exception {
         Long collegeId = createCollege("MAJ-CTRL-COL-CRUD").id();
-        mockMvc.perform(post("/api/majors")
+        mockMvc.perform(post("/api/majors").session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"collegeId\":" + collegeId + ",\"majorCode\":\"MAJ-CTRL-ADD\",\"majorName\":\"Add\",\"schoolingYears\":4,\"degreeType\":\"Bachelor\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
         MajorVO major = majorService.findAll().stream().filter(item -> "MAJ-CTRL-ADD".equals(item.majorCode())).findFirst().orElseThrow();
-        mockMvc.perform(put("/api/majors/{id}", major.id())
+        mockMvc.perform(put("/api/majors/{id}", major.id()).session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"collegeId\":" + collegeId + ",\"majorCode\":\"MAJ-CTRL-UPD\",\"majorName\":\"Updated\",\"schoolingYears\":4,\"degreeType\":\"Bachelor\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
-        mockMvc.perform(delete("/api/majors/{id}", major.id()))
+        mockMvc.perform(delete("/api/majors/{id}", major.id()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

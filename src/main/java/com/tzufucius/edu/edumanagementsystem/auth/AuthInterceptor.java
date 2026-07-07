@@ -38,7 +38,12 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean isPublicEndpoint(HttpServletRequest request) {
-        return "/api/auth/login".equals(request.getServletPath());
+        String path = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (contextPath != null && !contextPath.isBlank() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        return "/api/auth/login".equals(path);
     }
 
     private RequireRole findRequireRole(HandlerMethod handlerMethod) {

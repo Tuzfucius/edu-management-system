@@ -31,6 +31,7 @@ class AcademicBusinessControllerTest {
         String suffix = String.valueOf(System.nanoTime());
 
         mockMvc.perform(post("/api/users")
+                        .session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"username":"u-%s","password":"123456","role":"STUDENT"}
@@ -40,12 +41,13 @@ class AcademicBusinessControllerTest {
 
         Long userId = queryId("sys_user", "username", "u-" + suffix);
 
-        mockMvc.perform(get("/api/users/{id}", userId))
+        mockMvc.perform(get("/api/users/{id}", userId).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.username").value("u-" + suffix));
 
         mockMvc.perform(put("/api/users/{id}", userId)
+                        .session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"username":"u-%s-updated","role":"TEACHER"}
@@ -53,7 +55,7 @@ class AcademicBusinessControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
 
-        mockMvc.perform(delete("/api/users/{id}", userId))
+        mockMvc.perform(delete("/api/users/{id}", userId).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
@@ -62,15 +64,16 @@ class AcademicBusinessControllerTest {
     void studentTeacherTeachingTaskAndGradeFlowShouldWork() throws Exception {
         Fixture fixture = createFixture();
 
-        mockMvc.perform(get("/api/students/{id}", fixture.studentId()))
+        mockMvc.perform(get("/api/students/{id}", fixture.studentId()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.studentNo").value(fixture.studentNo()));
 
-        mockMvc.perform(get("/api/teachers/{id}", fixture.teacherId()))
+        mockMvc.perform(get("/api/teachers/{id}", fixture.teacherId()).session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.teacherNo").value(fixture.teacherNo()));
 
         mockMvc.perform(post("/api/teaching-tasks")
+                        .session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"courseId":%d,"teacherId":%d,"semester":"2025-2026-1","weekday":2,"startSection":3,"endSection":4,"weeks":"1-16周","classroom":"A302","capacity":2}
@@ -85,6 +88,7 @@ class AcademicBusinessControllerTest {
                 """, Long.class, fixture.courseId(), fixture.teacherId());
 
         mockMvc.perform(post("/api/student-courses")
+                        .session(TestAuth.studentSession(fixture.studentUserId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"studentId":%d,"teachingTaskId":%d}
@@ -99,6 +103,7 @@ class AcademicBusinessControllerTest {
                 """, Long.class, fixture.studentId(), taskId);
 
         mockMvc.perform(put("/api/student-courses/{id}/score", studentCourseId)
+                        .session(TestAuth.teacherSession(fixture.teacherUserId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"score":88,"remark":"测试录入"}
@@ -107,15 +112,15 @@ class AcademicBusinessControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
         assertOperationLog("成绩管理", "UPDATE_SCORE");
 
-        mockMvc.perform(get("/api/student-courses").param("studentId", fixture.studentId().toString()))
+        mockMvc.perform(get("/api/student-courses").session(TestAuth.studentSession(fixture.studentUserId())).param("studentId", fixture.studentId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].score").value(88));
 
-        mockMvc.perform(delete("/api/student-courses/{id}", studentCourseId))
+        mockMvc.perform(delete("/api/student-courses/{id}", studentCourseId).session(TestAuth.studentSession(fixture.studentUserId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500));
 
-        mockMvc.perform(delete("/api/student-courses/{id}/score", studentCourseId))
+        mockMvc.perform(delete("/api/student-courses/{id}/score", studentCourseId).session(TestAuth.teacherSession(fixture.teacherUserId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
         assertOperationLog("成绩管理", "REVOKE_SCORE");
@@ -130,7 +135,7 @@ class AcademicBusinessControllerTest {
                 studentCourseId
         ));
 
-        mockMvc.perform(delete("/api/student-courses/{id}", studentCourseId))
+        mockMvc.perform(delete("/api/student-courses/{id}", studentCourseId).session(TestAuth.studentSession(fixture.studentUserId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
         assertOperationLog("选课管理", "DROP_COURSE");
@@ -142,6 +147,7 @@ class AcademicBusinessControllerTest {
 
         Long firstTaskId = insertTeachingTask(fixture.courseId(), fixture.teacherId(), 2, 3, 4);
         mockMvc.perform(post("/api/student-courses")
+                        .session(TestAuth.studentSession(fixture.studentUserId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"studentId":%d,"teachingTaskId":%d}
@@ -151,6 +157,7 @@ class AcademicBusinessControllerTest {
 
         Long conflictTaskId = insertTeachingTask(fixture.courseId(), fixture.teacherId(), 2, 4, 5);
         mockMvc.perform(post("/api/student-courses")
+                        .session(TestAuth.studentSession(fixture.studentUserId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"studentId":%d,"teachingTaskId":%d}
@@ -164,6 +171,7 @@ class AcademicBusinessControllerTest {
         Fixture fixture = createFixture();
 
         mockMvc.perform(post("/api/teacher-students")
+                        .session(TestAuth.adminSession())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"teacherId":%d,"studentId":%d,"guideType":"课程设计指导","startDate":"2026-01-01"}
@@ -171,16 +179,16 @@ class AcademicBusinessControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
 
-        mockMvc.perform(get("/api/teacher-students"))
+        mockMvc.perform(get("/api/teacher-students").session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
 
-        mockMvc.perform(get("/api/reports/overview"))
+        mockMvc.perform(get("/api/reports/overview").session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.studentCount").exists());
 
-        mockMvc.perform(get("/api/reports/college-students"))
+        mockMvc.perform(get("/api/reports/college-students").session(TestAuth.adminSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
@@ -198,7 +206,7 @@ class AcademicBusinessControllerTest {
         Long studentId = insertStudent(studentNo, studentUserId, classId);
         Long teacherId = insertTeacher(teacherNo, teacherUserId, departmentId);
         Long courseId = insertCourse(suffix);
-        return new Fixture(studentId, teacherId, courseId, studentNo, teacherNo);
+        return new Fixture(studentId, teacherId, courseId, studentUserId, teacherUserId, studentNo, teacherNo);
     }
 
     private Long insertUser(String username, String role) {
@@ -296,6 +304,7 @@ class AcademicBusinessControllerTest {
         );
     }
 
-    private record Fixture(Long studentId, Long teacherId, Long courseId, String studentNo, String teacherNo) {
+    private record Fixture(Long studentId, Long teacherId, Long courseId, Long studentUserId, Long teacherUserId,
+                           String studentNo, String teacherNo) {
     }
 }
