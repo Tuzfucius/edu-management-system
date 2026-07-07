@@ -1,6 +1,7 @@
 # 教务管理系统
 
-本项目是《Java应用课程设计》的教务管理系统，采用 Spring Boot + Maven + MySQL 后端和 Vue 3 + Element Plus 前端。当前后端数据库与部分基础业务模块已经完成，前端已经进入页面骨架和业务界面规划阶段。
+本项目是《Java应用课程设计》的教务管理系统，采用 Spring Boot + Maven + MySQL 后端和 Vue 3 + Element Plus 前端。
+相关上下文信息放在 docs 文件夹下。
 
 ## 项目目标
 
