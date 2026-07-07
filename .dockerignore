@@ -1,0 +1,12 @@
+target/
+**/node_modules/
+logs/
+*.log
+.git
+.vscode/
+.idea/
+*.iml
+**/dist/
+*.md
+mvnw
+mvnw.cmd
