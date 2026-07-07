@@ -1,5 +1,7 @@
 # 教务管理系统
 
+[![CI](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml)
+
 本项目是《Java应用课程设计》的教务管理系统，后端采用 **Spring Boot 4.1.0 + Java 17 + Maven**，前端采用 **Vue 3 + Element Plus**，数据库使用 **MySQL**。
 
 ## 功能总览
@@ -156,6 +158,20 @@ npm run dev
 ```
 
 本地开发时前端访问 http://localhost:5173，Vite 自动代理 `/edu/api` 请求到后端 `8080` 端口。
+
+## 持续集成（CI）
+
+每次推送或发起 Pull Request 到 `main` 分支时，GitHub Actions 自动执行以下并行检查：
+
+| Job | 职责 |
+|---|---|
+| **backend** | Maven 构建 + 21 个测试用例（连接真实 MySQL service 容器） |
+| **frontend** | npm ci + npm run build（验证前端可构建） |
+| **docker** | Docker Buildx 构建 backend 和 frontend 镜像（验证 Dockerfile 无错误） |
+
+CI 状态徽章：[![CI](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml)
+
+CI 配置文件：`.github/workflows/ci.yml`
 
 ## 数据库
 
