@@ -310,12 +310,14 @@ public class AcademicBusinessService {
                 studentId, task.semester(), task.weekday(), task.startSection(), task.endSection()) > 0) {
             throw new BusinessException("Selected course has a time conflict");
         }
+        if (dao.increaseSelectedCountIfCapacityAvailable(teachingTaskId) != 1) {
+            throw new RuntimeException("Course capacity is full");
+        }
         if (existed == null) {
             dao.insertStudentCourse(studentId, teachingTaskId);
         } else {
             dao.reactivateStudentCourse(existed.id());
         }
-        dao.updateSelectedCount(teachingTaskId, 1);
         return dao.findStudentCourseByStudentAndTask(studentId, teachingTaskId).id();
     }
 
@@ -340,7 +342,9 @@ public class AcademicBusinessService {
         if (dao.disableStudentCourse(studentCourseId) != 1) {
             throw new RuntimeException("Failed to drop course");
         }
-        dao.updateSelectedCount(record.teachingTaskId(), -1);
+        if (dao.updateSelectedCount(record.teachingTaskId(), -1) != 1) {
+            throw new RuntimeException("Failed to update selected count");
+        }
     }
 
     public void dropCourse(Long studentCourseId, LoginUserVO currentUser) {

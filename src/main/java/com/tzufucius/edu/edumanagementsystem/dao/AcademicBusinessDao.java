@@ -343,6 +343,14 @@ public class AcademicBusinessDao {
                 """, delta, teachingTaskId, delta);
     }
 
+    public int increaseSelectedCountIfCapacityAvailable(Long teachingTaskId) {
+        return jdbcTemplate.update("""
+                UPDATE teaching_task
+                SET selected_count = selected_count + 1
+                WHERE id = ? AND selected_count < capacity
+                """, teachingTaskId);
+    }
+
     public StudentCourseStatus findStudentCourseByStudentAndTask(Long studentId, Long teachingTaskId) {
         return findOne("""
                 SELECT id, status
