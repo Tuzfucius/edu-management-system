@@ -1,6 +1,5 @@
 # 教务管理系统
 
-[![CI](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml)
 
 本项目是《Java应用课程设计》的教务管理系统，后端采用 **Spring Boot 4.1.0 + Java 17 + Maven**，前端采用 **Vue 3 + Element Plus**，数据库使用 **MySQL**。
 
@@ -169,7 +168,6 @@ npm run dev
 | **frontend** | npm ci + npm run build（验证前端可构建） |
 | **docker** | Docker Buildx 构建 backend 和 frontend 镜像（验证 Dockerfile 无错误） |
 
-CI 状态徽章：[![CI](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/Tzufucius/edu-management-system/actions/workflows/ci.yml)
 
 CI 配置文件：`.github/workflows/ci.yml`
 
@@ -197,11 +195,3 @@ SQL 脚本位于 `sql/` 目录下：
 - `01_create_database.sql` — 建库
 - `02_create_tables.sql` — 建表
 - `03_insert_sample_data.sql` — 插入示例数据（含初始管理員账号）
-
-## 智能体开发上下文
-
-- 涉及数据库表结构时，以 `docs/数据库计划.md` 和 `sql/02_create_tables.sql` 为准。
-- 涉及前端页面、路由和交互规划时，以 `docs/前端开发计划.md` 为准。
-- 涉及课程评分点时，以 `docs/java任务书.txt` 为准。
-- 本项目已初始化 CodeGraph；新增或大幅调整 Java 代码后，可执行 `codegraph index` 更新索引。
-- 新增目录时，应补充该目录下的 Markdown 说明文件，解释目录职责和维护规则。
