@@ -5,6 +5,7 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
+  base: '/edu/',
   plugins: [
     vue(),
     AutoImport({
@@ -18,8 +19,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080/edu',
+      '/edu/api': {
+        target: 'http://localhost:8080',
         changeOrigin: true
       }
     }

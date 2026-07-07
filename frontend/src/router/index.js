@@ -18,11 +18,25 @@ import MyGrades from '../views/student/MyGrades.vue'
 import Unauthorized from '../views/error/Unauthorized.vue'
 import NotFound from '../views/error/NotFound.vue'
 
+function readCurrentUser() {
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser') || 'null')
+        if (!user?.role) {
+            localStorage.removeItem('currentUser')
+            return null
+        }
+        return user
+    } catch (error) {
+        localStorage.removeItem('currentUser')
+        return null
+    }
+}
+
 const routes = [
     {
         path: '/',
         redirect: () => {
-            const user = JSON.parse(localStorage.getItem('currentUser') || 'null')
+            const user = readCurrentUser()
             if (!user) {
                 return '/login'
             }
@@ -137,7 +151,7 @@ const routes = [
 ]
 
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHistory(import.meta.env.BASE_URL),
     routes
 })
 
@@ -146,7 +160,7 @@ router.beforeEach((to) => {
         return true
     }
 
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null')
+    const currentUser = readCurrentUser()
     if (!currentUser) {
         return '/login'
     }
